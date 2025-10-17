@@ -1,0 +1,984 @@
+# MeroDaktar - Minimal Medical AI Application
+
+## Backend Setup
+
+### requirements.txt
+```
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-multipart==0.0.6
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+openai==1.3.0
+python-dotenv==1.0.0
+pydantic==2.5.0
+cors==1.0.1
+```
+
+### .env
+```
+OPENAI_API_KEY=your-openai-api-key-here
+DATABASE_URL=postgresql://user:password@localhost/merodaktar
+JWT_SECRET_KEY=your-secret-key-here-change-in-production
+```
+
+### app/main.py
+```python
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from typing import Optional, List, Dict
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+import openai
+import os
+from dotenv import load_dotenv
+import json
+import uuid
+
+# Load environment variables
+load_dotenv()
+
+app = FastAPI(title="MeroDaktar API")
+
+# CORS configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Security configuration
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key")
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# OpenAI configuration
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# In-memory storage (replace with database in production)
+users_db = {}
+patient_records = {}
+appointments = {}
+
+# Pydantic models
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    phone: str
+
+class User(BaseModel):
+    email: str
+    full_name: str
+    phone: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class ChatMessage(BaseModel):
+    message: str
+    patient_id: Optional[str] = None
+
+class PatientRecord(BaseModel):
+    patient_id: str
+    patient_name: str
+    consultation_date: str
+    symptoms: str
+    ai_assessment: str
+    urgency_level: str
+    recommendations: List[str]
+
+class Appointment(BaseModel):
+    patient_id: str
+    doctor_name: str
+    appointment_date: str
+    reason: str
+    status: str = "scheduled"
+
+# Medical AI System Prompt
+MEDICAL_SYSTEM_PROMPT = """You are a HIPAA-compliant medical assistant for MeroDaktar clinic.
+
+IMPORTANT GUIDELINES:
+1. Provide preliminary health assessments based on symptoms
+2. Never provide definitive diagnoses - always recommend consulting healthcare providers
+3. Flag emergency situations immediately
+4. Suggest appropriate specialists based on symptoms
+5. Be empathetic and professional
+6. Ask follow-up questions for better assessment
+7. Provide general health advice and preventive measures
+
+For each consultation, provide:
+- Symptom summary
+- Possible conditions (with disclaimer)
+- Urgency level (routine/moderate/urgent/emergency)
+- Recommended actions
+- When to seek immediate care
+
+Always end with: "This is not a diagnosis. Please consult a healthcare provider for proper medical evaluation."
+"""
+
+# Authentication functions
+def verify_password(plain_password, hashed_password):
+    return pwd_context.verify(plain_password, hashed_password)
+
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = users_db.get(email)
+    if user is None:
+        raise credentials_exception
+    return user
+
+# API Routes
+@app.post("/api/register", response_model=User)
+async def register(user: UserCreate):
+    if user.email in users_db:
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_password = get_password_hash(user.password)
+    users_db[user.email] = {
+        "email": user.email,
+        "hashed_password": hashed_password,
+        "full_name": user.full_name,
+        "phone": user.phone
+    }
+    
+    return User(email=user.email, full_name=user.full_name, phone=user.phone)
+
+@app.post("/api/token", response_model=Token)
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = users_db.get(form_data.username)
+    if not user or not verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    access_token = create_access_token(data={"sub": user["email"]})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/api/user/me", response_model=User)
+async def read_users_me(current_user: dict = Depends(get_current_user)):
+    return User(
+        email=current_user["email"],
+        full_name=current_user["full_name"],
+        phone=current_user["phone"]
+    )
+
+@app.post("/api/chat/medical")
+async def medical_consultation(
+    chat_message: ChatMessage,
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        # Create OpenAI chat completion
+        response = openai.ChatCompletion.create(
+            model="gpt-4-1106-preview",  # Using GPT-4 Turbo (more cost-effective)
+            messages=[
+                {"role": "system", "content": MEDICAL_SYSTEM_PROMPT},
+                {"role": "user", "content": chat_message.message}
+            ],
+            temperature=0.3,
+            max_tokens=500
+        )
+        
+        ai_response = response.choices[0].message.content
+        
+        # Analyze urgency level
+        urgency = "routine"
+        if any(word in chat_message.message.lower() for word in ["chest pain", "breathing", "emergency", "severe"]):
+            urgency = "emergency"
+        elif any(word in chat_message.message.lower() for word in ["pain", "fever", "vomiting"]):
+            urgency = "moderate"
+        
+        # Create patient record
+        record_id = str(uuid.uuid4())
+        patient_record = {
+            "record_id": record_id,
+            "patient_email": current_user["email"],
+            "patient_name": current_user["full_name"],
+            "consultation_date": datetime.utcnow().isoformat(),
+            "symptoms": chat_message.message,
+            "ai_assessment": ai_response,
+            "urgency_level": urgency,
+            "recommendations": [
+                "Schedule an appointment with a healthcare provider",
+                "Keep monitoring symptoms",
+                "Maintain a symptom diary"
+            ]
+        }
+        
+        # Store record
+        if current_user["email"] not in patient_records:
+            patient_records[current_user["email"]] = []
+        patient_records[current_user["email"]].append(patient_record)
+        
+        return {
+            "response": ai_response,
+            "urgency_level": urgency,
+            "record_id": record_id,
+            "consultation_saved": True
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI consultation failed: {str(e)}")
+
+@app.get("/api/patient/records")
+async def get_patient_records(current_user: dict = Depends(get_current_user)):
+    user_records = patient_records.get(current_user["email"], [])
+    return {"records": user_records}
+
+@app.post("/api/appointments/book")
+async def book_appointment(
+    appointment: Appointment,
+    current_user: dict = Depends(get_current_user)
+):
+    appointment_id = str(uuid.uuid4())
+    appointment_data = {
+        "appointment_id": appointment_id,
+        "patient_email": current_user["email"],
+        "patient_name": current_user["full_name"],
+        **appointment.dict()
+    }
+    
+    if current_user["email"] not in appointments:
+        appointments[current_user["email"]] = []
+    appointments[current_user["email"]].append(appointment_data)
+    
+    return {"appointment_id": appointment_id, "status": "confirmed"}
+
+@app.get("/api/appointments/my")
+async def get_my_appointments(current_user: dict = Depends(get_current_user)):
+    user_appointments = appointments.get(current_user["email"], [])
+    return {"appointments": user_appointments}
+
+# Voice endpoints (placeholder)
+@app.post("/api/voice/process")
+async def process_voice(current_user: dict = Depends(get_current_user)):
+    return {
+        "message": "Voice processing not implemented in minimal version",
+        "action": "Please use text chat for consultation"
+    }
+
+@app.get("/api/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+```
+
+## Frontend Setup
+
+### package.json
+```json
+{
+  "name": "merodaktar-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.18.0",
+    "axios": "^1.6.0",
+    "@heroicons/react": "^2.0.18"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "@vitejs/plugin-react": "^4.1.0",
+    "autoprefixer": "^10.4.16",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
+    "postcss": "^8.4.31",
+    "tailwindcss": "^3.3.5",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
+  }
+}
+```
+
+### vite.config.ts
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:8000'
+    }
+  }
+})
+```
+
+### tailwind.config.js
+```javascript
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+```
+
+### postcss.config.js
+```javascript
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+```
+
+### tsconfig.json
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+### index.html
+```html
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MeroDaktar - AI Medical Assistant</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+```
+
+### src/main.tsx
+```typescript
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.tsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+```
+
+### src/index.css
+```css
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+```
+
+### src/App.tsx
+```typescript
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './components/Login';
+import Dashboard from './components/Dashboard';
+import MedicalChat from './components/MedicalChat';
+import Appointments from './components/Appointments';
+
+function App() {
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    if (token) {
+      fetchUserData();
+    }
+  }, [token]);
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch('/api/user/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      } else {
+        handleLogout();
+      }
+    } catch (error) {
+      console.error('Failed to fetch user data:', error);
+    }
+  };
+
+  const handleLogin = (token: string) => {
+    localStorage.setItem('token', token);
+    setToken(token);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+  };
+
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        <Routes>
+          <Route 
+            path="/login" 
+            element={token ? <Navigate to="/dashboard" /> : <Login onLogin={handleLogin} />} 
+          />
+          <Route 
+            path="/dashboard" 
+            element={token ? <Dashboard user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/chat" 
+            element={token ? <MedicalChat token={token} user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route 
+            path="/appointments" 
+            element={token ? <Appointments token={token} user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+          />
+          <Route path="/" element={<Navigate to="/dashboard" />} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+export default App;
+```
+
+### src/components/Login.tsx
+```typescript
+import React, { useState } from 'react';
+
+interface LoginProps {
+  onLogin: (token: string) => void;
+}
+
+const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    full_name: '',
+    phone: ''
+  });
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      if (isLogin) {
+        const formDataObj = new FormData();
+        formDataObj.append('username', formData.email);
+        formDataObj.append('password', formData.password);
+
+        const response = await fetch('/api/token', {
+          method: 'POST',
+          body: formDataObj,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          onLogin(data.access_token);
+        } else {
+          setError('Invalid email or password');
+        }
+      } else {
+        // Register
+        const response = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          // Auto-login after registration
+          const formDataObj = new FormData();
+          formDataObj.append('username', formData.email);
+          formDataObj.append('password', formData.password);
+
+          const loginResponse = await fetch('/api/token', {
+            method: 'POST',
+            body: formDataObj,
+          });
+
+          if (loginResponse.ok) {
+            const data = await loginResponse.json();
+            onLogin(data.access_token);
+          }
+        } else {
+          setError('Registration failed. Email might already exist.');
+        }
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="bg-white p-8 rounded-lg shadow-xl w-96">
+        <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
+          MeroDaktar
+        </h2>
+        <h3 className="text-xl text-center mb-6 text-gray-600">
+          {isLogin ? 'Sign In' : 'Create Account'}
+        </h3>
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <input
+            type="email"
+            placeholder="Email"
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            required
+          />
+
+          <input
+            type="password"
+            placeholder="Password"
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+          />
+
+          {!isLogin && (
+            <>
+              <input
+                type="text"
+                placeholder="Full Name"
+                className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.full_name}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                required
+              />
+
+              <input
+                type="tel"
+                placeholder="Phone Number"
+                className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                required
+              />
+            </>
+          )}
+
+          <button
+            type="submit"
+            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-200"
+          >
+            {isLogin ? 'Sign In' : 'Register'}
+          </button>
+        </form>
+
+        <p className="text-center mt-4 text-gray-600">
+          {isLogin ? "Don't have an account? " : "Already have an account? "}
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="text-blue-600 hover:underline"
+          >
+            {isLogin ? 'Register' : 'Sign In'}
+          </button>
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
+```
+
+### src/components/Dashboard.tsx
+```typescript
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChatBubbleLeftIcon, CalendarIcon, UserCircleIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
+
+interface DashboardProps {
+  user: any;
+  onLogout: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  const [records, setRecords] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    const token = localStorage.getItem('token');
+    
+    // Fetch patient records
+    const recordsResponse = await fetch('/api/patient/records', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (recordsResponse.ok) {
+      const data = await recordsResponse.json();
+      setRecords(data.records || []);
+    }
+
+    // Fetch appointments
+    const appointmentsResponse = await fetch('/api/appointments/my', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (appointmentsResponse.ok) {
+      const data = await appointmentsResponse.json();
+      setAppointments(data.appointments || []);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <h1 className="text-3xl font-bold text-gray-900">MeroDaktar Dashboard</h1>
+            <button
+              onClick={onLogout}
+              className="flex items-center text-gray-500 hover:text-gray-700"
+            >
+              <ArrowRightOnRectangleIcon className="h-6 w-6 mr-2" />
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Welcome Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+          <h2 className="text-2xl font-bold mb-2">
+            Welcome back, {user?.full_name || 'Patient'}!
+          </h2>
+          <p>Your health journey starts here. How can we help you today?</p>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <button
+            onClick={() => navigate('/chat')}
+            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
+            <ChatBubbleLeftIcon className="h-12 w-12 text-blue-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">AI Medical Chat</h3>
+            <p className="text-gray-600">Get instant health advice from our AI assistant</p>
+          </button>
+
+          <button
+            onClick={() => navigate('/appointments')}
+            className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
+          >
+            <CalendarIcon className="h-12 w-12 text-green-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Book Appointment</h3>
+            <p className="text-gray-600">Schedule a consultation with a doctor</p>
+          </button>
+
+          <div className="bg-white p-6 rounded-lg shadow">
+            <UserCircleIcon className="h-12 w-12 text-purple-500 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Voice Consultation</h3>
+            <p className="text-gray-600">Coming soon - Voice-based medical assistance</p>
+          </div>
+        </div>
+
+        {/* Recent Consultations */}
+        <div className="mt-8 bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b">
+            <h3 className="text-lg font-semibold">Recent Consultations</h3>
+          </div>
+          <div className="p-6">
+            {records.length > 0 ? (
+              <div className="space-y-4">
+                {records.slice(0, 3).map((record, index) => (
+                  <div key={index} className="border-l-4 border-blue-500 pl-4">
+                    <p className="font-medium">{record.symptoms}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {new Date(record.consultation_date).toLocaleDateString()} - 
+                      Urgency: <span className={`font-medium ${
+                        record.urgency_level === 'emergency' ? 'text-red-600' :
+                        record.urgency_level === 'moderate' ? 'text-yellow-600' :
+                        'text-green-600'
+                      }`}>{record.urgency_level}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No consultations yet. Start a chat to get health advice.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Upcoming Appointments */}
+        <div className="mt-8 mb-8 bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b">
+            <h3 className="text-lg font-semibold">Upcoming Appointments</h3>
+          </div>
+          <div className="p-6">
+            {appointments.length > 0 ? (
+              <div className="space-y-4">
+                {appointments.map((apt, index) => (
+                  <div key={index} className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium">Dr. {apt.doctor_name}</p>
+                      <p className="text-sm text-gray-600">{apt.reason}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">{apt.appointment_date}</p>
+                      <p className="text-xs text-green-600">{apt.status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500">No upcoming appointments.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
+```
+
+### src/components/MedicalChat.tsx
+```typescript
+import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeftIcon, PaperAirplaneIcon, MicrophoneIcon } from '@heroicons/react/24/outline';
+
+interface MedicalChatProps {
+  token: string;
+  user: any;
+  onLogout: () => void;
+}
+
+interface Message {
+  id: string;
+  text: string;
+  sender: 'user' | 'ai';
+  timestamp: Date;
+  urgency?: string;
+}
+
+const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
+  const navigate = useNavigate();
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Add welcome message
+    setMessages([{
+      id: '1',
+      text: "Hello! I'm your AI medical assistant. Please describe your symptoms or health concerns, and I'll provide preliminary guidance. Remember, this is not a replacement for professional medical advice.",
+      sender: 'ai',
+      timestamp: new Date()
+    }]);
+  }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: inputMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('/api/chat/medical', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ message: inputMessage })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: data.response,
+          sender: 'ai',
+          timestamp: new Date(),
+          urgency: data.urgency_level
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error('Failed to get response');
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Sorry, I encountered an error. Please try again.',
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVoiceInput = () => {
+    // Placeholder for voice input
+    console.log('Voice input implementation needed');
+    alert('Voice input will be implemented in the next version');
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header */}
+      <header className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="mr-4 text-gray-500 hover:text-gray-700"
+              >
+                <ArrowLeftIcon className="h-6 w-6" />
+              </button>
+              <h1 className="text-2xl font-bold text-gray-900">AI Medical Consultation</h1>
+            </div>
+            <div className="text-sm text-gray-500">
+              {user?.full_name}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Chat Container */}
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+        <div className="bg-white rounded-lg shadow-lg h-[calc(100vh-200px)] flex flex-col">
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`max-w-[70%] rounded-lg p-4 ${
+                    message.sender === 'user'
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  <p className="whitespace-pre-wrap">{message.text}</p>
+                  {message.urgency && (
+                    <p className={`text-xs mt-2 ${
+                      message.sender === 'user' ? 'text-blue-100' : 
+                      message.urgency === 'emergency' ? 'text-
