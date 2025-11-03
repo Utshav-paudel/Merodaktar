@@ -18,6 +18,7 @@ from subapps.doctor.doctor_auth import router as doctor_auth_router
 from subapps.doctor.doctor_dashboard import router as doctor_dashboard_router
 from subapps.patient.ehr import router as patient_ehr_router
 from subapps.medical_chat.gemini_tts import router as gemini_tts_router
+from app.subapps.medical_chat.gemini_asr import router as speech_router
 
 # Load environment variables
 load_dotenv()
@@ -38,20 +39,33 @@ async def log_requests(request, call_next):
     print(f"Method: {request.method}")
     print(f"URL: {request.url}")
     print(f"Headers: {dict(request.headers)}")
-    
-    if request.method == "POST":
-        # Log request body for POST requests
+
+    body = b""
+    if request.method in ("POST", "PUT", "PATCH"):
         body = await request.body()
-        print(f"Body: {body.decode('utf-8') if body else 'Empty'}")
-        # Re-create request with body for further processing
+
+        content_type = request.headers.get("content-type", "")
+        if "multipart/form-data" in content_type or "application/octet-stream" in content_type:
+            # Binary upload (e.g., file upload)
+            print(f"Body: <binary data of length {len(body)} bytes>")
+        else:
+            # Try to safely decode
+            try:
+                decoded = body.decode("utf-8")
+                print(f"Body: {decoded if decoded else 'Empty'}")
+            except UnicodeDecodeError:
+                print(f"Body: <non-UTF8 data of length {len(body)} bytes>")
+
+        # Rebuild body for downstream request handling
         async def receive():
             return {"type": "http.request", "body": body}
         request._receive = receive
-    
+
     response = await call_next(request)
     print(f"Response status: {response.status_code}")
     print(f"=== REQUEST COMPLETE ===\n")
     return response
+
 
 # CORS configuration
 app.add_middleware(
@@ -71,7 +85,7 @@ app.include_router(doctor_auth_router, prefix="/api")
 app.include_router(doctor_dashboard_router, prefix="/api")
 app.include_router(patient_ehr_router, prefix="/api")
 app.include_router(gemini_tts_router, prefix="/api")
-
+app.include_router(speech_router, prefix="/api")
 # Root endpoint
 @app.get("/")
 async def root():

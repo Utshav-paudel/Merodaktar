@@ -1,5 +1,4 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
+fastapi[standard]
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
@@ -10,3 +9,9 @@ python-dotenv==1.0.0
 pydantic==2.5.0
 cors==1.0.1
 google-generativeai>=0.3.0
+pyotp
+qrcode
+pydantic[email]
+bcrypt==4.0.1
+google-genai
+pydub

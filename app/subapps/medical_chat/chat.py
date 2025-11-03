@@ -7,8 +7,9 @@ import os
 import uuid
 import re
 from ..login_verification.auth import get_current_user
-
+from dotenv import load_dotenv
 router = APIRouter(prefix="/medical", tags=["medical_chat"])
+load_dotenv()
 
 # OpenAI configuration
 from openai import OpenAI
