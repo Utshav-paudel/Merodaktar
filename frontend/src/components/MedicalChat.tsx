@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, PaperAirplaneIcon, MicrophoneIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/outline';
+import axios from "axios";
 
 interface MedicalChatProps {
   token: string;
@@ -24,6 +25,11 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   useEffect(() => {
     // Add welcome message
@@ -140,11 +146,105 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
     }
   };
 
-  const handleVoiceInput = () => {
-    // Placeholder for voice input
-    console.log('Voice input implementation needed');
-    alert('Voice input will be implemented in the next version');
+
+
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      //  Start recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
+        const formData = new FormData();
+        formData.append("audio", audioBlob, "recording.wav");
+
+        try {
+          setIsLoading(true);
+          //  Send to ASR service
+          const response = await axios.post(
+            "http://localhost:8000/api/speech/transcribe",
+            formData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
+
+          const transcript = response.data.transcription || "Couldn't transcribe audio.";
+
+          // Add transcription as user message
+          const userMessage: Message = {
+            id: Date.now().toString(),
+            text: transcript,
+            sender: "user",
+            timestamp: new Date(),
+          };
+          setMessages((prev) => [...prev, userMessage]);
+
+          //  Send transcription to chat API
+          const chatResponse = await fetch("/api/medical/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ message: transcript, language: "en" }),
+          });
+
+          if (chatResponse.ok) {
+            const data = await chatResponse.json();
+            const aiMessage: Message = {
+              id: (Date.now() + 1).toString(),
+              text: data.response,
+              sender: "ai",
+              timestamp: new Date(),
+              urgency: data.urgency_level,
+            };
+            setMessages((prev) => [...prev, aiMessage]);
+
+            if (voiceEnabled) speakText(data.response);
+          } else {
+            throw new Error("Failed to get AI response");
+          }
+        } catch (error) {
+          console.error("Voice input error:", error);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: (Date.now() + 1).toString(),
+              text: " Sorry, I couldn't process your voice input.",
+              sender: "ai",
+              timestamp: new Date(),
+            },
+          ]);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error("Microphone access error:", error);
+      alert("Microphone access denied or not supported.");
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -254,11 +354,16 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
             <div className="flex space-x-2">
               <button
                 onClick={handleVoiceInput}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-                title="Voice input (coming soon)"
+                className={`p-2 rounded-lg transition ${
+                  isRecording
+                    ? "bg-red-500 text-white animate-pulse"
+                    : "text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                }`}
+                title={isRecording ? "Stop Recording" : "Start Voice Input"}
               >
                 <MicrophoneIcon className="h-6 w-6" />
               </button>
+
               <input
                 type="text"
                 value={inputMessage}
