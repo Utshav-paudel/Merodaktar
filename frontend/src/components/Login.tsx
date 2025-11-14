@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginProps {
   onLogin: (token: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -21,44 +23,35 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
     try {
       if (isLogin) {
-        const formDataObj = new FormData();
-        formDataObj.append('username', formData.email);
-        formDataObj.append('password', formData.password);
-
-        const response = await fetch('/api/token', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/login/user', {
           method: 'POST',
-          body: formDataObj,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          }),
         });
 
         if (response.ok) {
           const data = await response.json();
           onLogin(data.access_token);
+          navigate('/dashboard');
         } else {
           setError('Invalid email or password');
         }
       } else {
         // Register
-        const response = await fetch('/api/register', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/register/user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         });
 
         if (response.ok) {
-          // Auto-login after registration
-          const formDataObj = new FormData();
-          formDataObj.append('username', formData.email);
-          formDataObj.append('password', formData.password);
-
-          const loginResponse = await fetch('/api/token', {
-            method: 'POST',
-            body: formDataObj,
-          });
-
-          if (loginResponse.ok) {
-            const data = await loginResponse.json();
-            onLogin(data.access_token);
-          }
+          // Already returns token with registration
+          const data = await response.json();
+          onLogin(data.access_token);
+          navigate('/dashboard');
         } else {
           setError('Registration failed. Email might already exist.');
         }
@@ -108,6 +101,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            maxLength={72}
+            minLength={8}
             required
           />
 

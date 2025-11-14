@@ -29,12 +29,12 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user }) => {
 
   const fetchDoctors = async () => {
     try {
-      const response = await fetch('/api/appointments/doctors?available_only=true', {
+      const response = await fetch('http://localhost:8000/api/v1/doctors?available=true', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setDoctors(data.doctors || []);
+        setDoctors(data || []);
       }
     } catch (error) {
       console.error('Failed to fetch doctors:', error);
@@ -43,12 +43,12 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user }) => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await fetch('/api/appointments/my-appointments', {
+      const response = await fetch('http://localhost:8000/api/v1/appointments/my-appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
-        setAppointments(data.appointments || []);
+        setAppointments(data || []);
       }
     } catch (error) {
       console.error('Failed to fetch appointments:', error);
@@ -64,7 +64,7 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user }) => {
     const time = datetime.toTimeString().slice(0, 5);
     
     try {
-      const response = await fetch('/api/appointments/book', {
+      const response = await fetch('http://localhost:8000/api/v1/appointments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -157,7 +157,7 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user }) => {
                     <option value="">Choose a doctor...</option>
                     {doctors.map((doctor) => (
                       <option key={doctor.id} value={doctor.id}>
-                        {doctor.name} - {doctor.specialty} ({doctor.experience})
+                        {doctor.full_name} - {doctor.specialization} ({doctor.years_of_experience} yrs)
                         {doctor.is_available ? ' ✅ Available' : ' ⛔ Unavailable'}
                       </option>
                     ))}

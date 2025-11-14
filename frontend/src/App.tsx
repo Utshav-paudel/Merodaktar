@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import MedicalChat from './components/MedicalChat';
+import MedicalChatWithHistory from './components/MedicalChatWithHistory';
 import Appointments from './components/Appointments';
 import DoctorLogin from './components/DoctorLogin';
 import DoctorDashboard from './components/DoctorDashboard';
@@ -21,24 +22,22 @@ function App() {
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('/api/verify', {
+      const response = await fetch('http://localhost:8000/api/v1/users/me', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
       if (response.ok) {
         const userData = await response.json();
-        setUser(userData.user); // Extract user from the response
+        setUser(userData); // Set user data directly
       } else if (response.status === 401) {
         // Token expired, logout user
         console.log('Token expired, logging out user');
         handleLogout();
-      } else {
-        handleLogout();
       }
     } catch (error) {
       console.error('Failed to fetch user data:', error);
-      handleLogout();
+      // Don't logout on fetch error, just log it
     }
   };
 
@@ -78,7 +77,7 @@ function App() {
           />
           <Route 
             path="/chat" 
-            element={token ? <MedicalChat token={token} user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
+            element={token ? <MedicalChatWithHistory token={token} user={user} onLogout={handleLogout} /> : <Navigate to="/login" />} 
           />
           <Route 
             path="/appointments" 

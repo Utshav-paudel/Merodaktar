@@ -21,7 +21,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     
     try {
       // Fetch dashboard summary
-      const summaryResponse = await fetch('/api/dashboard/summary', {
+      const summaryResponse = await fetch('http://localhost:8000/api/v1/dashboard/patient/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (summaryResponse.ok) {
@@ -29,22 +29,22 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         // Set any summary data you need
       }
 
-      // Fetch consultation history (this replaces patient records)
-      const recordsResponse = await fetch('/api/dashboard/consultation-history', {
+      // Fetch consultation history
+      const recordsResponse = await fetch('http://localhost:8000/api/v1/chat/my-consultations', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (recordsResponse.ok) {
         const data = await recordsResponse.json();
-        setRecords(data.consultations || []);
+        setRecords(data || []);
       }
 
-      // Fetch appointments (corrected endpoint)
-      const appointmentsResponse = await fetch('/api/appointments/my-appointments', {
+      // Fetch appointments
+      const appointmentsResponse = await fetch('http://localhost:8000/api/v1/appointments/my-appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (appointmentsResponse.ok) {
         const data = await appointmentsResponse.json();
-        setAppointments(data.appointments || []);
+        setAppointments(data || []);
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);

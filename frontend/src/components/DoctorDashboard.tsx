@@ -23,7 +23,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
   const fetchDoctorData = async () => {
     try {
       // Fetch profile
-      const profileRes = await fetch('/api/doctor/profile', {
+      const profileRes = await fetch('http://localhost:8000/api/v1/doctors/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (profileRes.ok) {
@@ -31,7 +31,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
       }
 
       // Fetch stats
-      const statsRes = await fetch('/api/doctor/dashboard/stats', {
+      const statsRes = await fetch('http://localhost:8000/api/v1/dashboard/doctor/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (statsRes.ok) {
@@ -39,30 +39,40 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
       }
 
       // Fetch appointments
-      const appointmentsRes = await fetch('/api/doctor/dashboard/appointments', {
+      const appointmentsRes = await fetch('http://localhost:8000/api/v1/appointments/doctor/appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (appointmentsRes.ok) {
         const data = await appointmentsRes.json();
-        setAppointments(data.appointments);
+        setAppointments(data || []);
       }
 
-      // Fetch today's appointments
-      const todayRes = await fetch('/api/doctor/dashboard/appointments/today', {
+      // Fetch today's appointments (filter from all appointments)
+      const todayRes = await fetch('http://localhost:8000/api/v1/appointments/doctor/appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (todayRes.ok) {
         const data = await todayRes.json();
-        setTodayAppointments(data.appointments);
+        const today = new Date().toISOString().split('T')[0];
+        setTodayAppointments((data || []).filter((apt: any) => apt.appointment_date === today));
       }
 
-      // Fetch patients
-      const patientsRes = await fetch('/api/doctor/dashboard/patients', {
+      // Fetch patients (derived from appointments)
+      const patientsRes = await fetch('http://localhost:8000/api/v1/appointments/doctor/appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (patientsRes.ok) {
         const data = await patientsRes.json();
-        setPatients(data.patients);
+        // Extract unique patients from appointments
+        const uniquePatients = Array.from(
+          new Map((data || []).map((apt: any) => [apt.patient_id, {
+            id: apt.patient_id,
+            name: apt.patient_name || 'Patient',
+            email: apt.patient_email || '',
+            total_appointments: 1
+          }])).values()
+        );
+        setPatients(uniquePatients);
       }
     } catch (error) {
       console.error('Error fetching doctor data:', error);
@@ -73,9 +83,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
   const updateAppointmentStatus = async (appointmentId: string, status: string) => {
     try {
-      const response = await fetch(`/api/doctor/dashboard/appointments/${appointmentId}/status?status=${status}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/appointments/${appointmentId}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
       });
       
       if (response.ok) {
@@ -88,13 +102,19 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
   const addAppointmentNotes = async (appointmentId: string) => {
     try {
-      const response = await fetch(`/api/doctor/dashboard/appointments/${appointmentId}/notes`, {
-        method: 'PUT',
+      const response = await fetch(`http://localhost:8000/api/v1/appointments/doctor/${appointmentId}/complete`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(notes)
+        body: JSON.stringify({
+          doctor_notes: notes.note,
+          diagnosis: notes.diagnosis,
+          prescription: notes.prescription,
+          follow_up_date: notes.follow_up_date,
+          follow_up_required: notes.follow_up_date ? 'yes' : 'no'
+        })
       });
       
       if (response.ok) {

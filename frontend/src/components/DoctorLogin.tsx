@@ -44,13 +44,13 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
 
     try {
       if (isLogin) {
-        const formDataObj = new FormData();
-        formDataObj.append('username', formData.email);
-        formDataObj.append('password', formData.password);
-
-        const response = await fetch('/api/doctor/token', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/login/doctor', {
           method: 'POST',
-          body: formDataObj,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          }),
         });
 
         if (response.ok) {
@@ -62,7 +62,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
         }
       } else {
         // Register
-        const response = await fetch('/api/doctor/register', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/register/doctor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -72,21 +72,10 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
         });
 
         if (response.ok) {
-          // Auto-login after registration
-          const formDataObj = new FormData();
-          formDataObj.append('username', formData.email);
-          formDataObj.append('password', formData.password);
-
-          const loginResponse = await fetch('/api/doctor/token', {
-            method: 'POST',
-            body: formDataObj,
-          });
-
-          if (loginResponse.ok) {
-            const data = await loginResponse.json();
-            onLogin(data.access_token);
-            navigate('/doctor/dashboard');
-          }
+          const data = await response.json();
+          // Note: Doctor needs verification before full access
+          alert('Registration successful! Please wait for account verification.');
+          setIsLogin(true);
         } else {
           const errorData = await response.json();
           setError(errorData.detail || 'Registration failed. Email might already exist.');
