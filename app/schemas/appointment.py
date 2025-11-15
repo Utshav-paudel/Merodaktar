@@ -38,6 +38,11 @@ class AppointmentResponse(AppointmentBase):
     prescription: Optional[str] = None
     follow_up_date: Optional[str] = None
     created_at: datetime
+    # Populated fields
+    patient_name: Optional[str] = None
+    patient_email: Optional[str] = None
+    doctor_name: Optional[str] = None
+    doctor_specialization: Optional[str] = None
 
     class Config:
         from_attributes = True

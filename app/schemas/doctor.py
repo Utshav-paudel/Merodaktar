@@ -59,3 +59,9 @@ class DoctorTokenResponse(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     doctor: DoctorResponse
+
+
+class DoctorRegistrationResponse(BaseModel):
+    message: str
+    doctor_id: str
+    email: str

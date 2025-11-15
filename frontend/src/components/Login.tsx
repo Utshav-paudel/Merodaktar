@@ -17,9 +17,22 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   });
   const [error, setError] = useState('');
 
+  const validatePassword = (password: string): boolean => {
+    const byteLength = new TextEncoder().encode(password).length;
+    if (byteLength > 72) {
+      setError('Password is too long (max 72 bytes). Please use a shorter password.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!validatePassword(formData.password)) {
+      return;
+    }
 
     try {
       if (isLogin) {
@@ -95,16 +108,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            maxLength={72}
-            minLength={8}
-            required
-          />
+          <div className="mb-4">
+            <input
+              type="password"
+              placeholder="Password (min 8 characters)"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              minLength={8}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {new TextEncoder().encode(formData.password).length} / 72 bytes used
+            </p>
+          </div>
 
           {!isLogin && (
             <>

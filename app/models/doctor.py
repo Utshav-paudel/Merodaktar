@@ -22,7 +22,7 @@ class Doctor(Base):
     profile_image = Column(String)
     consultation_fee = Column(Integer, default=500)
     is_available = Column(Boolean, default=True)
-    is_verified = Column(Boolean, default=False)
+    is_verified = Column(Boolean, default=True)
     weekly_schedule = Column(
         JSON
     )  # {"monday": ["09:00-12:00", "14:00-17:00"], ...}

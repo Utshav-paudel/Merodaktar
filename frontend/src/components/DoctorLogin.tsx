@@ -22,6 +22,15 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const validatePassword = (password: string): boolean => {
+    const byteLength = new TextEncoder().encode(password).length;
+    if (byteLength > 72) {
+      setError('Password is too long (max 72 bytes). Please use a shorter password.');
+      return false;
+    }
+    return true;
+  };
+
   const specializations = [
     'General Practice',
     'Cardiology',
@@ -40,6 +49,11 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!validatePassword(formData.password)) {
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -125,14 +139,20 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-          />
+          <div>
+            <input
+              type="password"
+              placeholder="Password (min 8 characters)"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              minLength={8}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {new TextEncoder().encode(formData.password).length} / 72 bytes used
+            </p>
+          </div>
 
           {!isLogin && (
             <>

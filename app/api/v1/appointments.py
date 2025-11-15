@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 
 from config.database import get_db
 from core.security import get_current_user, get_current_doctor
@@ -54,8 +55,11 @@ async def get_my_appointments(
     status_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     appointment_service: AppointmentService = Depends(get_appointment_service),
+    db: Session = Depends(get_db),
 ):
     """Get current user's appointments"""
+    from repositories.doctor import DoctorRepository
+
     appointments = appointment_service.get_patient_appointments(
         current_user.id, skip, limit
     )
@@ -64,6 +68,14 @@ async def get_my_appointments(
         appointments = [
             apt for apt in appointments if apt.status == status_filter
         ]
+
+    # Populate doctor information
+    doctor_repo = DoctorRepository(db)
+    for apt in appointments:
+        doctor = doctor_repo.get(apt.doctor_id)
+        if doctor:
+            apt.doctor_name = doctor.full_name
+            apt.doctor_specialization = doctor.specialization
 
     return appointments
 
@@ -75,8 +87,11 @@ async def get_doctor_appointments(
     status_filter: Optional[str] = None,
     current_doctor: Doctor = Depends(get_current_doctor),
     appointment_service: AppointmentService = Depends(get_appointment_service),
+    db: Session = Depends(get_db),
 ):
     """Get current doctor's appointments"""
+    from repositories.user import UserRepository
+
     appointments = appointment_service.get_doctor_appointments(
         current_doctor.id, skip, limit
     )
@@ -85,6 +100,14 @@ async def get_doctor_appointments(
         appointments = [
             apt for apt in appointments if apt.status == status_filter
         ]
+
+    # Populate patient information
+    user_repo = UserRepository(db)
+    for apt in appointments:
+        patient = user_repo.get(apt.patient_id)
+        if patient:
+            apt.patient_name = patient.full_name
+            apt.patient_email = patient.email
 
     return appointments
 
@@ -180,14 +203,18 @@ async def cancel_appointment(
     return {"message": "Appointment cancelled successfully"}
 
 
+class CompleteAppointmentRequest(BaseModel):
+    doctor_notes: Optional[str] = None
+    diagnosis: Optional[str] = None
+    prescription: Optional[str] = None
+    follow_up_date: Optional[str] = None
+    follow_up_required: str = "no"
+
+
 @router.post("/{appointment_id}/complete")
 async def complete_appointment(
     appointment_id: str,
-    doctor_notes: Optional[str] = None,
-    diagnosis: Optional[str] = None,
-    prescription: Optional[str] = None,
-    follow_up_date: Optional[str] = None,
-    follow_up_required: str = "no",
+    request_data: CompleteAppointmentRequest,
     current_doctor: Doctor = Depends(get_current_doctor),
     appointment_service: AppointmentService = Depends(get_appointment_service),
     db: Session = Depends(get_db),
@@ -211,11 +238,11 @@ async def complete_appointment(
 
     appointment_service.complete_appointment(
         appointment_id,
-        doctor_notes,
-        diagnosis,
-        prescription,
-        follow_up_date,
-        follow_up_required,
+        request_data.doctor_notes,
+        request_data.diagnosis,
+        request_data.prescription,
+        request_data.follow_up_date,
+        request_data.follow_up_required,
     )
 
     return {"message": "Appointment completed successfully"}

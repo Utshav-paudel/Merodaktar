@@ -3,7 +3,12 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from schemas.user import UserCreate, UserLogin, TokenResponse
-from schemas.doctor import DoctorCreate, DoctorLogin, DoctorTokenResponse
+from schemas.doctor import (
+    DoctorCreate,
+    DoctorLogin,
+    DoctorTokenResponse,
+    DoctorRegistrationResponse,
+)
 from services.auth_service import AuthService
 from api.dependencies import get_auth_service
 from core.exceptions import AuthenticationError, ValidationError
@@ -69,7 +74,7 @@ async def login_user(
 
 @router.post(
     "/register/doctor",
-    response_model=DoctorTokenResponse,
+    response_model=DoctorRegistrationResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def register_doctor(
@@ -92,11 +97,11 @@ async def register_doctor(
         )
 
         # Note: Doctor needs verification before login
-        return {
-            "message": "Doctor registered successfully. Account pending verification.",
-            "doctor_id": doctor.id,
-            "email": doctor.email,
-        }
+        return DoctorRegistrationResponse(
+            message="Doctor registered successfully. Account pending verification.",
+            doctor_id=doctor.id,
+            email=doctor.email,
+        )
 
     except ValidationError as e:
         raise HTTPException(

@@ -25,9 +25,24 @@ class AuthService:
     def _truncate_password(password: str) -> str:
         """
         Truncate password to bcrypt's 72 byte limit in a consistent way.
+        Properly handles multi-byte UTF-8 characters.
         """
-        password_bytes = password.encode("utf-8")[:72]
-        return password_bytes.decode("utf-8", errors="ignore")
+        password_bytes = password.encode("utf-8")
+        if len(password_bytes) <= 72:
+            return password
+
+        # Truncate to 72 bytes without breaking UTF-8 characters
+        truncated = password_bytes[:72]
+        # Try to decode, backing off byte by byte if we hit a partial character
+        for i in range(
+            72, 68, -1
+        ):  # Try up to 4 bytes back (max UTF-8 char size)
+            try:
+                return truncated[:i].decode("utf-8")
+            except UnicodeDecodeError:
+                continue
+        # Fallback: use ignore to skip broken characters
+        return truncated.decode("utf-8", errors="ignore")
 
     @staticmethod
     def hash_password(password: str) -> str:
@@ -133,7 +148,7 @@ class AuthService:
         full_name: str,
         specialization: str,
         license_number: str,
-        **kwargs
+        **kwargs,
     ) -> Doctor:
         """Register a new doctor"""
         # Check if doctor exists
