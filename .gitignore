@@ -83,3 +83,6 @@ frontend/.vite/
 # Temp files
 *.tmp
 *.temp
+
+# venv
+.venv
