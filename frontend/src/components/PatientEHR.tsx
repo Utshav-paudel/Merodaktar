@@ -23,23 +23,23 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
   const fetchEHRData = async () => {
     try {
       // Fetch complete EHR
-      const ehrRes = await fetch('/api/patient/ehr/', {
+      const ehrRes = await fetch('http://localhost:8000/api/v1/ehr/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (ehrRes.ok) {
         setEhrData(await ehrRes.json());
       }
 
-      // Fetch summary
-      const summaryRes = await fetch('/api/patient/ehr/summary', {
+      // Fetch summary (derived from EHR data)
+      const summaryRes = await fetch('http://localhost:8000/api/v1/ehr/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (summaryRes.ok) {
         setSummary(await summaryRes.json());
       }
 
-      // Fetch vitals trend
-      const trendRes = await fetch('/api/patient/ehr/vitals-trend?days=30', {
+      // Fetch vitals trend (use EHR vital signs data)
+      const trendRes = await fetch('http://localhost:8000/api/v1/ehr/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (trendRes.ok) {
@@ -63,16 +63,16 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
       let endpoint = '';
       switch (modalType) {
         case 'vitals':
-          endpoint = '/api/patient/ehr/vital-signs';
+          endpoint = 'http://localhost:8000/api/v1/ehr/me/vital-signs';
           break;
         case 'medication':
-          endpoint = '/api/patient/ehr/medications';
+          endpoint = 'http://localhost:8000/api/v1/ehr/me/medication';
           break;
         case 'allergy':
-          endpoint = '/api/patient/ehr/allergies';
+          endpoint = 'http://localhost:8000/api/v1/ehr/me/allergy';
           break;
         case 'history':
-          endpoint = '/api/patient/ehr/medical-history';
+          endpoint = 'http://localhost:8000/api/v1/ehr/me';
           break;
         default:
           return;

@@ -23,17 +23,41 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Add welcome message
-    setMessages([{
-      id: '1',
-      text: "Hello! I'm your AI medical assistant. Please describe your symptoms or health concerns, and I'll provide preliminary guidance. Remember, this is not a replacement for professional medical advice.",
-      sender: 'ai',
-      timestamp: new Date()
-    }]);
+    // Create chat session
+    createChatSession();
   }, []);
+
+  const createChatSession = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/chat/session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ language: 'en' })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSessionId(data.session_id);
+        
+        // Add welcome message
+        setMessages([{
+          id: '1',
+          text: "Hello! I'm your AI medical assistant. Please describe your symptoms or health concerns, and I'll provide preliminary guidance. Remember, this is not a replacement for professional medical advice.",
+          sender: 'ai',
+          timestamp: new Date()
+        }]);
+      }
+    } catch (error) {
+      console.error('Failed to create chat session:', error);
+    }
+  };
 
   useEffect(() => {
     scrollToBottom();
@@ -80,7 +104,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
   };
 
   const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !sessionId) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -94,7 +118,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/medical/chat', {
+      const response = await fetch(`http://localhost:8000/api/v1/chat/session/${sessionId}/message`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -102,27 +126,40 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
         },
         body: JSON.stringify({ 
             message: inputMessage,
-            language: 'en'  // or 'ne' for Nepali
+            sender: 'user'
         })
         });
 
       if (response.ok) {
         const data = await response.json();
         
-        const aiMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: data.response,
-          sender: 'ai',
-          timestamp: new Date(),
-          urgency: data.urgency_level
-        };
+        // Use the actual AI response from the backend
+        if (data.ai_response) {
+          const aiMessage: Message = {
+            id: data.ai_response.id,
+            text: data.ai_response.message,
+            sender: 'ai',
+            timestamp: new Date(data.ai_response.timestamp)
+          };
 
-        setMessages(prev => [...prev, aiMessage]);
-        
-        // Speak the response if voice is enabled
-        if (voiceEnabled) {
-          speakText(data.response);
+          setMessages(prev => [...prev, aiMessage]);
+          
+          // Speak the response if voice is enabled
+          if (voiceEnabled) {
+            speakText(aiMessage.text);
+          }
         }
+      } else if (response.status === 401) {
+        // Handle authentication error
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          text: 'Your session has expired. Please log in again.',
+          sender: 'ai',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        // Optionally redirect to login after a delay
+        setTimeout(() => onLogout(), 2000);
       } else {
         throw new Error('Failed to get response');
       }

@@ -23,7 +23,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
   const fetchDoctorData = async () => {
     try {
       // Fetch profile
-      const profileRes = await fetch('/api/doctor/profile', {
+      const profileRes = await fetch('http://localhost:8000/api/v1/doctors/me', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (profileRes.ok) {
@@ -31,7 +31,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
       }
 
       // Fetch stats
-      const statsRes = await fetch('/api/doctor/dashboard/stats', {
+      const statsRes = await fetch('http://localhost:8000/api/v1/dashboard/doctor/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (statsRes.ok) {
@@ -39,30 +39,40 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
       }
 
       // Fetch appointments
-      const appointmentsRes = await fetch('/api/doctor/dashboard/appointments', {
+      const appointmentsRes = await fetch('http://localhost:8000/api/v1/appointments/doctor/appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (appointmentsRes.ok) {
         const data = await appointmentsRes.json();
-        setAppointments(data.appointments);
+        setAppointments(data || []);
       }
 
-      // Fetch today's appointments
-      const todayRes = await fetch('/api/doctor/dashboard/appointments/today', {
+      // Fetch today's appointments (filter from all appointments)
+      const todayRes = await fetch('http://localhost:8000/api/v1/appointments/doctor/appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (todayRes.ok) {
         const data = await todayRes.json();
-        setTodayAppointments(data.appointments);
+        const today = new Date().toISOString().split('T')[0];
+        setTodayAppointments((data || []).filter((apt: any) => apt.appointment_date === today));
       }
 
-      // Fetch patients
-      const patientsRes = await fetch('/api/doctor/dashboard/patients', {
+      // Fetch patients (derived from appointments)
+      const patientsRes = await fetch('http://localhost:8000/api/v1/appointments/doctor/appointments', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (patientsRes.ok) {
         const data = await patientsRes.json();
-        setPatients(data.patients);
+        // Extract unique patients from appointments
+        const uniquePatients = Array.from(
+          new Map((data || []).map((apt: any) => [apt.patient_id, {
+            id: apt.patient_id,
+            name: apt.patient_name || 'Patient',
+            email: apt.patient_email || '',
+            total_appointments: 1
+          }])).values()
+        );
+        setPatients(uniquePatients);
       }
     } catch (error) {
       console.error('Error fetching doctor data:', error);
@@ -73,9 +83,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
   const updateAppointmentStatus = async (appointmentId: string, status: string) => {
     try {
-      const response = await fetch(`/api/doctor/dashboard/appointments/${appointmentId}/status?status=${status}`, {
+      const response = await fetch(`http://localhost:8000/api/v1/appointments/${appointmentId}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
       });
       
       if (response.ok) {
@@ -88,22 +102,33 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
   const addAppointmentNotes = async (appointmentId: string) => {
     try {
-      const response = await fetch(`/api/doctor/dashboard/appointments/${appointmentId}/notes`, {
-        method: 'PUT',
+      const response = await fetch(`http://localhost:8000/api/v1/appointments/${appointmentId}/complete`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(notes)
+        body: JSON.stringify({
+          doctor_notes: notes.note,
+          diagnosis: notes.diagnosis,
+          prescription: notes.prescription,
+          follow_up_date: notes.follow_up_date,
+          follow_up_required: notes.follow_up_date ? 'yes' : 'no'
+        })
       });
       
       if (response.ok) {
         setNotes({ note: '', diagnosis: '', prescription: '', follow_up_date: '' });
         setSelectedAppointment(null);
         fetchDoctorData();
+      } else {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        alert(`Failed to save notes: ${errorData.detail || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error adding notes:', error);
+      alert('Failed to save notes. Please try again.');
     }
   };
 
@@ -203,10 +228,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
               {todayAppointments.length > 0 ? (
                 <div className="space-y-3">
                   {todayAppointments.map((apt) => (
-                    <div key={apt.appointment_id} className="border rounded-lg p-4 hover:bg-gray-50">
+                    <div key={apt.id} className="border rounded-lg p-4 hover:bg-gray-50">
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-semibold">{apt.patient_name}</p>
+                          <p className="font-semibold">{apt.patient_name || 'Patient'}</p>
+                          <p className="text-sm text-gray-600">{apt.patient_email || ''}</p>
                           <p className="text-sm text-gray-600">{apt.appointment_time}</p>
                           <p className="text-sm text-gray-500 mt-1">Reason: {apt.reason}</p>
                         </div>
@@ -219,7 +245,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                           </button>
                           <select
                             value={apt.status}
-                            onChange={(e) => updateAppointmentStatus(apt.appointment_id, e.target.value)}
+                            onChange={(e) => updateAppointmentStatus(apt.id, e.target.value)}
                             className="px-2 py-1 border rounded text-sm"
                           >
                             <option value="confirmed">Confirmed</option>
@@ -256,8 +282,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {appointments.map((apt) => (
-                    <tr key={apt.appointment_id}>
-                      <td className="px-6 py-4 whitespace-nowrap">{apt.patient_name}</td>
+                    <tr key={apt.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <p className="font-medium">{apt.patient_name || 'Patient'}</p>
+                          <p className="text-xs text-gray-500">{apt.patient_email || ''}</p>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">{new Date(apt.appointment_date).toLocaleDateString()}</td>
                       <td className="px-6 py-4 whitespace-nowrap">{apt.appointment_time}</td>
                       <td className="px-6 py-4">{apt.reason}</td>
@@ -355,7 +386,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
               </div>
               <div className="flex space-x-3">
                 <button
-                  onClick={() => addAppointmentNotes(selectedAppointment.appointment_id)}
+                  onClick={() => addAppointmentNotes(selectedAppointment.id)}
                   className="flex-1 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700"
                 >
                   Save Notes

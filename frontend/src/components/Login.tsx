@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface LoginProps {
   onLogin: (token: string) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -15,50 +17,54 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   });
   const [error, setError] = useState('');
 
+  const validatePassword = (password: string): boolean => {
+    const byteLength = new TextEncoder().encode(password).length;
+    if (byteLength > 72) {
+      setError('Password is too long (max 72 bytes). Please use a shorter password.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!validatePassword(formData.password)) {
+      return;
+    }
 
     try {
       if (isLogin) {
-        const formDataObj = new FormData();
-        formDataObj.append('username', formData.email);
-        formDataObj.append('password', formData.password);
-
-        const response = await fetch('/api/token', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/login/user', {
           method: 'POST',
-          body: formDataObj,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          }),
         });
 
         if (response.ok) {
           const data = await response.json();
           onLogin(data.access_token);
+          navigate('/dashboard');
         } else {
           setError('Invalid email or password');
         }
       } else {
         // Register
-        const response = await fetch('/api/register', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/register/user', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(formData),
         });
 
         if (response.ok) {
-          // Auto-login after registration
-          const formDataObj = new FormData();
-          formDataObj.append('username', formData.email);
-          formDataObj.append('password', formData.password);
-
-          const loginResponse = await fetch('/api/token', {
-            method: 'POST',
-            body: formDataObj,
-          });
-
-          if (loginResponse.ok) {
-            const data = await loginResponse.json();
-            onLogin(data.access_token);
-          }
+          // Already returns token with registration
+          const data = await response.json();
+          onLogin(data.access_token);
+          navigate('/dashboard');
         } else {
           setError('Registration failed. Email might already exist.');
         }
@@ -102,14 +108,20 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-          />
+          <div className="mb-4">
+            <input
+              type="password"
+              placeholder="Password (min 8 characters)"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              minLength={8}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {new TextEncoder().encode(formData.password).length} / 72 bytes used
+            </p>
+          </div>
 
           {!isLogin && (
             <>

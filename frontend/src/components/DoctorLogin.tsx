@@ -22,6 +22,15 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const validatePassword = (password: string): boolean => {
+    const byteLength = new TextEncoder().encode(password).length;
+    if (byteLength > 72) {
+      setError('Password is too long (max 72 bytes). Please use a shorter password.');
+      return false;
+    }
+    return true;
+  };
+
   const specializations = [
     'General Practice',
     'Cardiology',
@@ -40,17 +49,22 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (!validatePassword(formData.password)) {
+      return;
+    }
+    
     setLoading(true);
 
     try {
       if (isLogin) {
-        const formDataObj = new FormData();
-        formDataObj.append('username', formData.email);
-        formDataObj.append('password', formData.password);
-
-        const response = await fetch('/api/doctor/token', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/login/doctor', {
           method: 'POST',
-          body: formDataObj,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password
+          }),
         });
 
         if (response.ok) {
@@ -62,7 +76,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
         }
       } else {
         // Register
-        const response = await fetch('/api/doctor/register', {
+        const response = await fetch('http://localhost:8000/api/v1/auth/register/doctor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -72,21 +86,10 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
         });
 
         if (response.ok) {
-          // Auto-login after registration
-          const formDataObj = new FormData();
-          formDataObj.append('username', formData.email);
-          formDataObj.append('password', formData.password);
-
-          const loginResponse = await fetch('/api/doctor/token', {
-            method: 'POST',
-            body: formDataObj,
-          });
-
-          if (loginResponse.ok) {
-            const data = await loginResponse.json();
-            onLogin(data.access_token);
-            navigate('/doctor/dashboard');
-          }
+          const data = await response.json();
+          // Note: Doctor needs verification before full access
+          alert('Registration successful! Please wait for account verification.');
+          setIsLogin(true);
         } else {
           const errorData = await response.json();
           setError(errorData.detail || 'Registration failed. Email might already exist.');
@@ -136,14 +139,20 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
             required
           />
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            required
-          />
+          <div>
+            <input
+              type="password"
+              placeholder="Password (min 8 characters)"
+              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              minLength={8}
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              {new TextEncoder().encode(formData.password).length} / 72 bytes used
+            </p>
+          </div>
 
           {!isLogin && (
             <>
