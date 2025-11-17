@@ -36,6 +36,86 @@ interface Conversation {
   total_messages: number;
 }
 
+// Helper function to convert AudioBuffer to WAV format
+const audioBufferToWav = (audioBuffer: AudioBuffer): ArrayBuffer => {
+  const numberOfChannels = audioBuffer.numberOfChannels;
+  const sampleRate = audioBuffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numberOfChannels * bytesPerSample;
+
+  const data = new Float32Array(audioBuffer.length * numberOfChannels);
+  for (let channel = 0; channel < numberOfChannels; channel++) {
+    const channelData = audioBuffer.getChannelData(channel);
+    for (let i = 0; i < audioBuffer.length; i++) {
+      data[i * numberOfChannels + channel] = channelData[i];
+    }
+  }
+
+  const dataLength = data.length * bytesPerSample;
+  const buffer = new ArrayBuffer(44 + dataLength);
+  const view = new DataView(buffer);
+
+  // Write WAV header
+  const writeString = (offset: number, string: string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numberOfChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataLength, true);
+
+  // Write audio data
+  const volume = 0.8;
+  let offset = 44;
+  for (let i = 0; i < data.length; i++) {
+    const sample = Math.max(-1, Math.min(1, data[i]));
+    view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF * volume, true);
+    offset += 2;
+  }
+
+  return buffer;
+};
+
+// Convert WebM to WAV
+const convertWebMToWav = async (webmBlob: Blob): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    const fileReader = new FileReader();
+
+    fileReader.onload = async (e) => {
+      try {
+        const arrayBuffer = e.target?.result as ArrayBuffer;
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+        // Convert to WAV
+        const wavBuffer = audioBufferToWav(audioBuffer);
+        const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+        resolve(wavBlob);
+      } catch (error) {
+        reject(error);
+      }
+    };
+
+    fileReader.onerror = () => reject(new Error('Failed to read audio file'));
+    fileReader.readAsArrayBuffer(webmBlob);
+  });
+};
+
 const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,6 +123,10 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
   const [isLoading, setIsLoading] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -50,7 +134,6 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load user's consultations
     loadConversations();
   }, []);
 
@@ -100,18 +183,18 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           timestamp: new Date()
         }]);
         
-        // Reload conversations
         await loadConversations();
+        return data.session_id;
       }
     } catch (error) {
       console.error('Failed to create chat session:', error);
     }
+    return null;
   };
 
   const loadConversation = async (session_id: string) => {
     setIsLoadingHistory(true);
     try {
-      // Get session history
       const response = await fetch(
         `http://localhost:8000/api/v1/chat/session/${session_id}/history?limit=100`,
         {
@@ -159,10 +242,8 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
       );
 
       if (response.ok) {
-        // Reload conversations
         await loadConversations();
         
-        // If deleted conversation was active, clear messages
         if (session_id === sessionId) {
           setMessages([]);
           setSessionId(null);
@@ -203,7 +284,6 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    // Create new session if none exists
     if (!sessionId) {
       await createNewChat();
       return;
@@ -254,7 +334,6 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           }
         }
         
-        // Reload conversations to update message count
         await loadConversations();
       } else if (response.status === 401) {
         const errorMessage: Message = {
@@ -279,6 +358,134 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const webmBlob = new Blob(audioChunksRef.current, { 
+          type: 'audio/webm;codecs=opus'
+        });
+
+        try {
+          setIsLoading(true);
+
+          // Convert WebM to WAV
+          console.log('Converting WebM to WAV...');
+          const wavBlob = await convertWebMToWav(webmBlob);
+          console.log('Conversion complete. WAV size:', wavBlob.size);
+
+          const formData = new FormData();
+          formData.append('audio', wavBlob, 'recording.wav');
+
+          // Send to ASR endpoint
+          const asrResponse = await fetch('http://localhost:8000/api/v1/speech/transcribe', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          if (!asrResponse.ok) {
+            const errorData = await asrResponse.json().catch(() => ({ detail: 'ASR service failed' }));
+            throw new Error(errorData.detail || 'ASR service failed');
+          }
+
+          const asrData = await asrResponse.json();
+          const transcript = asrData.transcription || "Couldn't transcribe audio.";
+
+          // Add transcription as user message
+          const userMessage: Message = {
+            id: Date.now().toString(),
+            text: transcript,
+            sender: 'user',
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, userMessage]);
+
+          // Ensure session exists
+          let currentSession = sessionId;
+          if (!currentSession) {
+            currentSession = await createNewChat();
+          }
+
+          // Send to chat session
+          if (currentSession) {
+            const chatResponse = await fetch(
+              `http://localhost:8000/api/v1/chat/session/${currentSession}/message`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ message: transcript, sender: 'user' })
+              }
+            );
+
+            if (chatResponse.ok) {
+              const data = await chatResponse.json();
+              if (data.ai_response) {
+                const aiMessage: Message = {
+                  id: data.ai_response.id,
+                  text: data.ai_response.message,
+                  sender: 'ai',
+                  timestamp: new Date(data.ai_response.timestamp)
+                };
+                setMessages(prev => [...prev, aiMessage]);
+                if (voiceEnabled) speakText(aiMessage.text);
+              }
+              
+              await loadConversations();
+            } else {
+              throw new Error('Failed to get AI response');
+            }
+          }
+
+        } catch (error) {
+          console.error('Voice input error:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          setMessages(prev => [...prev, {
+            id: (Date.now() + 1).toString(),
+            text: `Sorry, I couldn't process your voice input. ${errorMessage}`,
+            sender: 'ai',
+            timestamp: new Date()
+          }]);
+        } finally {
+          setIsLoading(false);
+          // Stop all tracks to release microphone
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Microphone access error:', error);
+      alert('Microphone access denied or not supported.');
     }
   };
 
@@ -398,11 +605,9 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
                 >
                   <ArrowLeftIcon className="h-6 w-6" />
                 </button>
-                <img 
-                  src="/mero-daktar-logo.png" 
-                  alt="MeroDaktar Logo" 
-                  className="h-10 w-10"
-                />
+                <div className="h-10 w-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-xl">M</span>
+                </div>
                 <div>
                   <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                     AI Medical Assistant
@@ -508,6 +713,18 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
             {/* Input Area */}
             <div className="border-t p-4 flex-shrink-0 bg-white">
               <div className="flex space-x-2">
+                <button
+                  onClick={handleVoiceInput}
+                  className={`p-2 rounded-lg transition ${
+                    isRecording
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title={isRecording ? 'Stop Recording' : 'Start Voice Input'}
+                >
+                  <MicrophoneIcon className="h-6 w-6" />
+                </button>
+
                 <input
                   type="text"
                   value={inputMessage}

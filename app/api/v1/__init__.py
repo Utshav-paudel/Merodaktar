@@ -6,7 +6,7 @@ from .appointments import router as appointments_router
 from .chat import router as chat_router
 from .ehr import router as ehr_router
 from .dashboard import router as dashboard_router
-
+from .gemini_asr import router as gemini_asr_router
 api_router = APIRouter()
 
 api_router.include_router(auth_router, prefix="/auth", tags=["Authentication"])
@@ -21,4 +21,7 @@ api_router.include_router(
 )
 api_router.include_router(
     dashboard_router, prefix="/dashboard", tags=["Dashboard"]
+)
+api_router.include_router(
+    gemini_asr_router, prefix="/speech", tags=["Speech"]
 )
