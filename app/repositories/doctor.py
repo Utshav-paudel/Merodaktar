@@ -12,6 +12,10 @@ class DoctorRepository(BaseRepository[Doctor]):
         """Get doctor by email"""
         return self.db.query(Doctor).filter(Doctor.email == email).first()
 
+    def get_by_license_number(self, license_number: str) -> Optional[Doctor]:
+        """Get doctor by license number"""
+        return self.db.query(Doctor).filter(Doctor.license_number == license_number).first()
+
     def get_by_specialization(
         self, specialization: str, skip: int = 0, limit: int = 100
     ) -> List[Doctor]:

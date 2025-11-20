@@ -6,6 +6,10 @@ from .appointments import router as appointments_router
 from .chat import router as chat_router
 from .ehr import router as ehr_router
 from .dashboard import router as dashboard_router
+from .admin import router as admin_router
+from .reports import router as reports_router
+from .schedules import router as schedules_router
+from .gemini_asr import router as gemini_asr_router
 
 api_router = APIRouter()
 
@@ -21,4 +25,16 @@ api_router.include_router(
 )
 api_router.include_router(
     dashboard_router, prefix="/dashboard", tags=["Dashboard"]
+)
+api_router.include_router(
+    admin_router, prefix="/admin", tags=["Admin"]
+)
+api_router.include_router(
+    reports_router, prefix="/reports", tags=["Reports"]
+)
+api_router.include_router(
+    schedules_router, prefix="/schedules", tags=["Schedules"]
+)
+api_router.include_router(
+    gemini_asr_router, prefix="/speech", tags=["Speech"]
 )

@@ -33,6 +33,18 @@ class Settings(BaseSettings):
     # AI API Keys
     OPENAI_API_KEY: str
     GEMINI_API_KEY: str
+    
+    # MedGemma Configuration
+    MEDGEMMA_BASE_URL: str = "https://e6r5j02wqcigw3lp.us-east-1.aws.endpoints.huggingface.cloud/v1/"
+    MEDGEMMA_API_KEY: str = ""
+    MEDGEMMA_MODEL: str = "Utshav/medgemma-nepali-fp16"
+    
+    # Legacy Hugging Face settings (kept for backward compatibility)
+    HF_TOKEN: str = ""  # Hugging Face token (deprecated, use MEDGEMMA_API_KEY)
+    MEDGEMMA_ENDPOINT: str = ""  # MedGemma endpoint URL (deprecated, use MEDGEMMA_BASE_URL)
+
+    # AI Backend Selection
+    AI_BACKEND: str = "openai"  # Options: "openai" or "medgemma"
 
     # CORS Settings
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"

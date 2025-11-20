@@ -25,8 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (summaryResponse.ok) {
-        const summaryData = await summaryResponse.json();
-        // Set any summary data you need
+        await summaryResponse.json(); // Summary data loaded
       }
 
       // Fetch consultation history
@@ -48,6 +47,60 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       }
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
+    }
+  };
+
+  const cancelAppointment = async (appointmentId: string) => {
+    const token = localStorage.getItem('token');
+    if (!confirm('Are you sure you want to cancel this appointment?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/appointments/${appointmentId}`, {
+        method: 'PUT',
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      });
+      
+      if (response.ok) {
+        fetchData(); // Refresh data
+        alert('Appointment cancelled successfully!');
+      } else {
+        const error = await response.json();
+        alert('Error cancelling appointment: ' + (error.detail || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error);
+      alert('Error cancelling appointment. Please try again.');
+    }
+  };
+
+  const deleteConsultation = async (consultationId: string) => {
+    const token = localStorage.getItem('token');
+    if (!confirm('Are you sure you want to delete this consultation? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`http://localhost:8000/api/v1/chat/consultations/${consultationId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        fetchData(); // Refresh data
+        alert('Consultation deleted successfully!');
+      } else {
+        const error = await response.json();
+        alert('Error deleting consultation: ' + (error.detail || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error deleting consultation:', error);
+      alert('Error deleting consultation. Please try again.');
     }
   };
 
@@ -89,14 +142,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
           <button
             onClick={() => navigate('/chat')}
             className="bg-white p-6 rounded-lg shadow hover:shadow-lg transition-shadow"
           >
             <ChatBubbleLeftIcon className="h-12 w-12 text-blue-500 mb-4" />
             <h3 className="text-lg font-semibold mb-2">AI Medical Chat</h3>
-            <p className="text-gray-600">Get instant health advice from our AI assistant</p>
+            <p className="text-gray-600">Get instant health advice & symptom assessment</p>
           </button>
 
           <button
@@ -135,17 +188,26 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
           <div className="p-6">
             {records.length > 0 ? (
               <div className="space-y-4">
-                {records.slice(0, 3).map((record, index) => (
-                  <div key={index} className="border-l-4 border-blue-500 pl-4">
-                    <p className="font-medium">{record.symptoms}</p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {new Date(record.consultation_date).toLocaleDateString()} - 
-                      Urgency: <span className={`font-medium ${
-                        record.urgency_level === 'emergency' ? 'text-red-600' :
-                        record.urgency_level === 'moderate' ? 'text-yellow-600' :
-                        'text-green-600'
-                      }`}>{record.urgency_level}</span>
-                    </p>
+                {records.slice(0, 5).map((record, index) => (
+                  <div key={index} className="border-l-4 border-blue-500 pl-4 pr-2 flex justify-between items-start">
+                    <div className="flex-1">
+                      <p className="font-medium">{record.symptoms}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {new Date(record.consultation_date).toLocaleDateString()} - 
+                        Urgency: <span className={`font-medium ${
+                          record.urgency_level === 'emergency' ? 'text-red-600' :
+                          record.urgency_level === 'moderate' ? 'text-yellow-600' :
+                          'text-green-600'
+                        }`}>{record.urgency_level}</span>
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => deleteConsultation(record.id)}
+                      className="ml-2 px-2 py-1 text-red-600 hover:bg-red-50 rounded transition"
+                      title="Delete Consultation"
+                    >
+                      ✕
+                    </button>
                   </div>
                 ))}
               </div>
@@ -164,14 +226,34 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
             {appointments.length > 0 ? (
               <div className="space-y-4">
                 {appointments.map((apt, index) => (
-                  <div key={index} className="flex justify-between items-center">
-                    <div>
-                      <p className="font-medium">Dr. {apt.doctor_name}</p>
-                      <p className="text-sm text-gray-600">{apt.reason}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{apt.appointment_date}</p>
-                      <p className="text-xs text-green-600">{apt.status}</p>
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <p className="font-medium">Dr. {apt.doctor_name}</p>
+                        <p className="text-sm text-gray-600">{apt.reason}</p>
+                        <div className="flex items-center mt-2 space-x-2">
+                          <p className="text-sm font-medium">{apt.appointment_date} at {apt.appointment_time}</p>
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            apt.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                            apt.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            apt.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                            apt.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {apt.status.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex space-x-2">
+                        {apt.status !== 'cancelled' && apt.status !== 'completed' && (
+                          <button
+                            onClick={() => cancelAppointment(apt.id)}
+                            className="px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

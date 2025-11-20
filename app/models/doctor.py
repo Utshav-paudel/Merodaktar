@@ -37,6 +37,12 @@ class Doctor(Base):
     appointments = relationship(
         "Appointment", back_populates="doctor", cascade="all, delete-orphan"
     )
+    schedules = relationship(
+        "DoctorSchedule", back_populates="doctor", cascade="all, delete-orphan"
+    )
+    time_slots = relationship(
+        "TimeSlot", back_populates="doctor", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<Doctor(id={self.id}, name={self.full_name}, specialization={self.specialization})>"

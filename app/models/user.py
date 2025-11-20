@@ -36,6 +36,12 @@ class User(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+    reports = relationship(
+        "Report", back_populates="patient", cascade="all, delete-orphan"
+    )
+    encounters = relationship(
+        "Encounter", back_populates="patient", cascade="all, delete-orphan"
+    )
 
     def __repr__(self):
         return f"<User(id={self.id}, email={self.email})>"

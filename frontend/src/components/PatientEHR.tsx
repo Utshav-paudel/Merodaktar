@@ -7,7 +7,7 @@ interface PatientEHRProps {
 }
 
 const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'vitals' | 'medications' | 'allergies' | 'history'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'vitals' | 'medications' | 'allergies' | 'history' | 'encounters'>('overview');
   const [ehrData, setEhrData] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
   const [vitalsTrend, setVitalsTrend] = useState<any>(null);
@@ -15,6 +15,7 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [modalType, setModalType] = useState<string>('');
   const [formData, setFormData] = useState<any>({});
+  const [encounters, setEncounters] = useState<any[]>([]);
 
   useEffect(() => {
     fetchEHRData();
@@ -27,23 +28,37 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (ehrRes.ok) {
-        setEhrData(await ehrRes.json());
+        const data = await ehrRes.json();
+        setEhrData(data);
+        
+        // Compute summary from EHR data
+        const summaryData = {
+          active_medications_count: data.medications?.length || 0,
+          allergies_count: data.allergies?.length || 0,
+          chronic_conditions_count: data.chronic_conditions?.length || 0,
+          latest_vitals: data.vital_signs?.[data.vital_signs.length - 1] || null
+        };
+        setSummary(summaryData);
+        
+        // Compute vitals trend from vital signs
+        if (data.vital_signs && data.vital_signs.length > 0) {
+          const recentVitals = data.vital_signs.slice(-30); // Last 30 records
+          setVitalsTrend({
+            dates: recentVitals.map((v: any) => v.recorded_at),
+            values: recentVitals
+          });
+        } else {
+          setVitalsTrend({ dates: [], values: [] });
+        }
       }
-
-      // Fetch summary (derived from EHR data)
-      const summaryRes = await fetch('http://localhost:8000/api/v1/ehr/me', {
+      
+      // Fetch encounters
+      const encountersRes = await fetch('http://localhost:8000/api/v1/ehr/me/encounters', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (summaryRes.ok) {
-        setSummary(await summaryRes.json());
-      }
-
-      // Fetch vitals trend (use EHR vital signs data)
-      const trendRes = await fetch('http://localhost:8000/api/v1/ehr/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (trendRes.ok) {
-        setVitalsTrend(await trendRes.json());
+      if (encountersRes.ok) {
+        const encountersData = await encountersRes.json();
+        setEncounters(encountersData || []);
       }
     } catch (error) {
       console.error('Error fetching EHR data:', error);
@@ -61,6 +76,8 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
   const handleAddRecord = async () => {
     try {
       let endpoint = '';
+      let body = formData;
+      
       switch (modalType) {
         case 'vitals':
           endpoint = 'http://localhost:8000/api/v1/ehr/me/vital-signs';
@@ -73,6 +90,17 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
           break;
         case 'history':
           endpoint = 'http://localhost:8000/api/v1/ehr/me';
+          // Format history data as chronic_conditions array
+          body = {
+            chronic_conditions: [
+              {
+                condition: formData.condition,
+                diagnosed_date: formData.diagnosed_date,
+                status: formData.status || 'active',
+                notes: formData.notes || ''
+              }
+            ]
+          };
           break;
         default:
           return;
@@ -84,15 +112,20 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(body)
       });
 
       if (response.ok) {
         setShowAddModal(false);
         fetchEHRData();
+      } else {
+        const errorData = await response.json();
+        console.error('Error response:', errorData);
+        alert(`Failed to add record: ${errorData.detail || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error adding record:', error);
+      alert('Failed to add record. Please try again.');
     }
   };
 
@@ -171,12 +204,18 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
           >
             Medical History
           </button>
+          <button
+            onClick={() => setActiveTab('encounters')}
+            className={`px-4 py-2 font-semibold whitespace-nowrap ${activeTab === 'encounters' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
+          >
+            Encounter Reports
+          </button>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
-        {activeTab === 'overview' && summary && (
+        {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -184,7 +223,7 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">Active Medications</p>
-                    <p className="text-3xl font-bold text-blue-600">{summary.active_medications_count}</p>
+                    <p className="text-3xl font-bold text-blue-600">{summary?.active_medications_count || 0}</p>
                   </div>
                   <div className="text-4xl">💊</div>
                 </div>
@@ -194,7 +233,7 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">Known Allergies</p>
-                    <p className="text-3xl font-bold text-red-600">{summary.allergies_count}</p>
+                    <p className="text-3xl font-bold text-red-600">{summary?.allergies_count || 0}</p>
                   </div>
                   <div className="text-4xl">⚠️</div>
                 </div>
@@ -204,7 +243,7 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-gray-600 text-sm">Chronic Conditions</p>
-                    <p className="text-3xl font-bold text-purple-600">{summary.chronic_conditions_count}</p>
+                    <p className="text-3xl font-bold text-purple-600">{summary?.chronic_conditions_count || 0}</p>
                   </div>
                   <div className="text-4xl">📋</div>
                 </div>
@@ -212,7 +251,7 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
             </div>
 
             {/* Latest Vitals */}
-            {summary.latest_vitals && (
+            {summary?.latest_vitals ? (
               <div className="bg-white p-6 rounded-lg shadow-sm">
                 <h3 className="text-lg font-semibold mb-4">Latest Vital Signs</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -244,10 +283,15 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
                   )}
                 </div>
               </div>
+            ) : (
+              <div className="bg-white p-6 rounded-lg shadow-sm">
+                <h3 className="text-lg font-semibold mb-4">Latest Vital Signs</h3>
+                <p className="text-gray-500 text-center py-4">No vital signs recorded yet</p>
+              </div>
             )}
 
             {/* Vitals Trend */}
-            {vitalsTrend && vitalsTrend.dates.length > 0 && (
+            {vitalsTrend && vitalsTrend.dates && vitalsTrend.dates.length > 0 && (
               <div className="bg-white p-6 rounded-lg shadow-sm">
                 <h3 className="text-lg font-semibold mb-4">Vital Signs Trend (Last 30 Days)</h3>
                 <div className="space-y-4">
@@ -255,6 +299,14 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
                     {vitalsTrend.dates.length} records found
                   </div>
                 </div>
+              </div>
+            )}
+            
+            {/* Empty state message */}
+            {(!summary || (summary.active_medications_count === 0 && summary.allergies_count === 0 && summary.chronic_conditions_count === 0)) && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                <p className="text-blue-800 font-medium mb-2">Welcome to Your Electronic Health Record</p>
+                <p className="text-blue-600 text-sm">Start by adding your vital signs, medications, allergies, or medical history using the tabs above.</p>
               </div>
             )}
           </div>
@@ -272,23 +324,24 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
               </button>
             </div>
             <div className="space-y-3">
-              {ehrData.vital_signs.map((vital: any, index: number) => (
-                <div key={index} className="border rounded-lg p-4">
-                  <p className="text-sm text-gray-600 mb-2">
-                    {new Date(vital.recorded_at).toLocaleString()}
-                  </p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                    {vital.blood_pressure_systolic && (
-                      <div>BP: {vital.blood_pressure_systolic}/{vital.blood_pressure_diastolic} mmHg</div>
-                    )}
-                    {vital.heart_rate && <div>HR: {vital.heart_rate} bpm</div>}
-                    {vital.temperature && <div>Temp: {vital.temperature}°C</div>}
-                    {vital.weight && <div>Weight: {vital.weight} kg</div>}
-                    {vital.bmi && <div>BMI: {vital.bmi}</div>}
+              {ehrData.vital_signs && ehrData.vital_signs.length > 0 ? (
+                ehrData.vital_signs.map((vital: any, index: number) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-2">
+                      {new Date(vital.recorded_at || Date.now()).toLocaleString()}
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                      {vital.blood_pressure_systolic && (
+                        <div>BP: {vital.blood_pressure_systolic}/{vital.blood_pressure_diastolic} mmHg</div>
+                      )}
+                      {vital.heart_rate && <div>HR: {vital.heart_rate} bpm</div>}
+                      {vital.temperature && <div>Temp: {vital.temperature}°C</div>}
+                      {vital.weight && <div>Weight: {vital.weight} kg</div>}
+                      {vital.bmi && <div>BMI: {vital.bmi}</div>}
+                    </div>
                   </div>
-                </div>
-              ))}
-              {ehrData.vital_signs.length === 0 && (
+                ))
+              ) : (
                 <p className="text-gray-500 text-center py-8">No vital signs recorded</p>
               )}
             </div>
@@ -307,28 +360,33 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
               </button>
             </div>
             <div className="space-y-3">
-              {ehrData.medications.map((med: any) => (
-                <div key={med.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold">{med.name}</h4>
-                      <p className="text-sm text-gray-600">{med.dosage} - {med.frequency}</p>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Started: {new Date(med.start_date).toLocaleDateString()}
-                      </p>
-                      <p className="text-xs text-gray-500">Prescribed by: {med.prescribed_by}</p>
+              {ehrData.medications && ehrData.medications.length > 0 ? (
+                ehrData.medications.map((med: any, index: number) => (
+                  <div key={med.id || index} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold">{med.name || 'Medication'}</h4>
+                        <p className="text-sm text-gray-600">{med.dosage} {med.frequency && `- ${med.frequency}`}</p>
+                        {med.start_date && (
+                          <p className="text-sm text-gray-500 mt-1">
+                            Started: {new Date(med.start_date).toLocaleDateString()}
+                          </p>
+                        )}
+                        {med.prescribed_by && (
+                          <p className="text-xs text-gray-500">Prescribed by: {med.prescribed_by}</p>
+                        )}
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        med.status === 'active' ? 'bg-green-100 text-green-800' :
+                        med.status === 'completed' ? 'bg-gray-100 text-gray-800' :
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {med.status || 'active'}
+                      </span>
                     </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      med.status === 'active' ? 'bg-green-100 text-green-800' :
-                      med.status === 'completed' ? 'bg-gray-100 text-gray-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {med.status}
-                    </span>
                   </div>
-                </div>
-              ))}
-              {ehrData.medications.length === 0 && (
+                ))
+              ) : (
                 <p className="text-gray-500 text-center py-8">No medications recorded</p>
               )}
             </div>
@@ -347,27 +405,30 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
               </button>
             </div>
             <div className="space-y-3">
-              {ehrData.allergies.map((allergy: any) => (
-                <div key={allergy.id} className="border rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold">{allergy.allergen}</h4>
-                      <p className="text-sm text-gray-600">Reaction: {allergy.reaction}</p>
-                      <p className="text-sm text-gray-500">
-                        Identified: {new Date(allergy.date_identified).toLocaleDateString()}
-                      </p>
+              {ehrData.allergies && ehrData.allergies.length > 0 ? (
+                ehrData.allergies.map((allergy: any, index: number) => (
+                  <div key={allergy.id || index} className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="font-semibold">{allergy.allergen || allergy.name || 'Allergen'}</h4>
+                        <p className="text-sm text-gray-600">Reaction: {allergy.reaction || 'Not specified'}</p>
+                        {allergy.date_identified && (
+                          <p className="text-sm text-gray-500">
+                            Identified: {new Date(allergy.date_identified).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        allergy.severity === 'severe' ? 'bg-red-100 text-red-800' :
+                        allergy.severity === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-green-100 text-green-800'
+                      }`}>
+                        {allergy.severity || 'mild'}
+                      </span>
                     </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      allergy.severity === 'severe' ? 'bg-red-100 text-red-800' :
-                      allergy.severity === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-green-100 text-green-800'
-                    }`}>
-                      {allergy.severity}
-                    </span>
                   </div>
-                </div>
-              ))}
-              {ehrData.allergies.length === 0 && (
+                ))
+              ) : (
                 <p className="text-gray-500 text-center py-8">No allergies recorded</p>
               )}
             </div>
@@ -377,7 +438,7 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
         {activeTab === 'history' && ehrData && (
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Medical History</h3>
+              <h3 className="text-lg font-semibold">Medical History & Chronic Conditions</h3>
               <button
                 onClick={() => openAddModal('history')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
@@ -386,13 +447,14 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
               </button>
             </div>
             <div className="space-y-3">
-              {ehrData.medical_history.map((history: any) => (
-                <div key={history.id} className="border rounded-lg p-4">
+              {ehrData.chronic_conditions && ehrData.chronic_conditions.map((history: any, index: number) => (
+                <div key={index} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-semibold">{history.condition}</h4>
+                      <h4 className="font-semibold">{history.condition || history.name || 'Condition'}</h4>
                       <p className="text-sm text-gray-600">
-                        Diagnosed: {new Date(history.diagnosed_date).toLocaleDateString()}
+                        {history.diagnosed_date ? `Diagnosed: ${new Date(history.diagnosed_date).toLocaleDateString()}` : 
+                         history.date ? `Date: ${new Date(history.date).toLocaleDateString()}` : ''}
                       </p>
                       {history.notes && (
                         <p className="text-sm text-gray-500 mt-1">{history.notes}</p>
@@ -403,15 +465,221 @@ const PatientEHR: React.FC<PatientEHRProps> = ({ token, user, onLogout }) => {
                       history.status === 'active' ? 'bg-blue-100 text-blue-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
-                      {history.status}
+                      {history.status || 'active'}
                     </span>
                   </div>
                 </div>
               ))}
-              {ehrData.medical_history.length === 0 && (
+              {(!ehrData.chronic_conditions || ehrData.chronic_conditions.length === 0) && (
                 <p className="text-gray-500 text-center py-8">No medical history recorded</p>
               )}
             </div>
+          </div>
+        )}
+
+        {activeTab === 'encounters' && (
+          <div className="bg-white rounded-lg shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-4">Encounter Timeline</h3>
+            {encounters.length === 0 ? (
+              <p className="text-gray-500 text-center py-8">No encounters recorded</p>
+            ) : (
+              <div className="space-y-4">
+                {encounters.map((encounter: any) => (
+                  <div key={encounter.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        {/* Encounter Date as Header */}
+                        <div className="flex items-center gap-3 mb-2">
+                          <h4 className="text-lg font-bold text-gray-900">
+                            📅 {new Date(encounter.encounter_date || encounter.created_at).toLocaleDateString('en-US', { 
+                              year: 'numeric', month: 'long', day: 'numeric' 
+                            })}
+                          </h4>
+                          <span className={`inline-block px-3 py-1 text-xs font-medium rounded-full ${
+                            encounter.encounter_type === 'ai_consultation' ? 'bg-blue-100 text-blue-800' :
+                            encounter.encounter_type === 'ai_symptom_assessment' ? 'bg-purple-100 text-purple-800' :
+                            encounter.encounter_type === 'in_person' ? 'bg-green-100 text-green-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {encounter.encounter_type?.replace(/_/g, ' ').toUpperCase() || 'GENERAL'}
+                          </span>
+                        </div>
+                        <p className="font-semibold text-xl text-gray-800">{encounter.chief_complaint}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          🕒 {new Date(encounter.encounter_date || encounter.created_at).toLocaleTimeString('en-US', { 
+                            hour: '2-digit', minute: '2-digit' 
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {/* Patient Summary */}
+                    {encounter.patient_summary && (
+                      <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                        <p className="text-sm font-semibold text-blue-900 mb-3">👤 Patient Summary:</p>
+                        <div className="text-sm text-blue-800 space-y-2">
+                          {typeof encounter.patient_summary === 'object' ? (
+                            <>
+                              <div className="grid grid-cols-2 gap-2">
+                                <p><strong>Name:</strong> {encounter.patient_summary.patient_name}</p>
+                                <p><strong>Age:</strong> {encounter.patient_summary.age}</p>
+                                <p><strong>Gender:</strong> {encounter.patient_summary.gender}</p>
+                                <p><strong>Blood Type:</strong> {encounter.patient_summary.blood_type || 'Unknown'}</p>
+                                <p><strong>Phone:</strong> {encounter.patient_summary.phone}</p>
+                                <p><strong>Address:</strong> {encounter.patient_summary.address}</p>
+                              </div>
+                              
+                              {/* Vital Signs */}
+                              {encounter.patient_summary.vital_signs && Object.keys(encounter.patient_summary.vital_signs).length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-blue-300">
+                                  <p className="font-semibold mb-2">💓 Latest Vital Signs:</p>
+                                  <div className="grid grid-cols-3 gap-2 text-xs">
+                                    {encounter.patient_summary.vital_signs.blood_pressure && encounter.patient_summary.vital_signs.blood_pressure !== 'Not recorded' && (
+                                      <p><strong>BP:</strong> {encounter.patient_summary.vital_signs.blood_pressure}</p>
+                                    )}
+                                    {encounter.patient_summary.vital_signs.heart_rate && encounter.patient_summary.vital_signs.heart_rate !== 'Not recorded' && (
+                                      <p><strong>HR:</strong> {encounter.patient_summary.vital_signs.heart_rate}</p>
+                                    )}
+                                    {encounter.patient_summary.vital_signs.temperature && encounter.patient_summary.vital_signs.temperature !== 'Not recorded' && (
+                                      <p><strong>Temp:</strong> {encounter.patient_summary.vital_signs.temperature}</p>
+                                    )}
+                                    {encounter.patient_summary.vital_signs.weight && encounter.patient_summary.vital_signs.weight !== 'Not recorded' && (
+                                      <p><strong>Weight:</strong> {encounter.patient_summary.vital_signs.weight}</p>
+                                    )}
+                                    {encounter.patient_summary.vital_signs.height && encounter.patient_summary.vital_signs.height !== 'Not recorded' && (
+                                      <p><strong>Height:</strong> {encounter.patient_summary.vital_signs.height}</p>
+                                    )}
+                                    {encounter.patient_summary.vital_signs.bmi && encounter.patient_summary.vital_signs.bmi !== 'Not calculated' && (
+                                      <p><strong>BMI:</strong> {encounter.patient_summary.vital_signs.bmi}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Current Medications */}
+                              {encounter.patient_summary.current_medications && encounter.patient_summary.current_medications.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-blue-300">
+                                  <p className="font-semibold mb-2">💊 Current Medications:</p>
+                                  <ul className="list-disc list-inside space-y-1 text-xs">
+                                    {encounter.patient_summary.current_medications.map((med: any, idx: number) => (
+                                      <li key={idx}>
+                                        <strong>{med.name}</strong> - {med.dosage} ({med.frequency})
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {/* Allergies */}
+                              {encounter.patient_summary.allergies && encounter.patient_summary.allergies.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-blue-300">
+                                  <p className="font-semibold mb-2">⚠️ Allergies:</p>
+                                  <ul className="list-disc list-inside space-y-1 text-xs">
+                                    {encounter.patient_summary.allergies.map((allergy: any, idx: number) => (
+                                      <li key={idx} className="text-red-700">
+                                        <strong>{allergy.allergen}</strong> - {allergy.reaction} ({allergy.severity})
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                              
+                              {/* Medical History */}
+                              {encounter.patient_summary.medical_history && encounter.patient_summary.medical_history.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-blue-300">
+                                  <p className="font-semibold mb-2">📋 Medical History:</p>
+                                  <ul className="list-disc list-inside space-y-1 text-xs">
+                                    {encounter.patient_summary.medical_history.map((condition: any, idx: number) => (
+                                      <li key={idx}>
+                                        <strong>{condition.condition}</strong> - Diagnosed: {condition.diagnosed_date} ({condition.status})
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="whitespace-pre-line">{encounter.patient_summary}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* AI Preliminary Report */}
+                    {encounter.ai_preliminary_report && (
+                      <div className="mt-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                        <p className="text-sm font-semibold text-purple-900 mb-2">🤖 AI Preliminary Report:</p>
+                        <p className="text-sm text-purple-800 whitespace-pre-line">{encounter.ai_preliminary_report}</p>
+                      </div>
+                    )}
+                    
+                    {encounter.symptoms && encounter.symptoms.length > 0 && (
+                      <div className="mt-3">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">🩺 Symptoms:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {encounter.symptoms.map((symptom: any, idx: number) => (
+                            <span key={idx} className="px-3 py-1 bg-red-100 text-red-700 text-xs font-medium rounded-full">
+                              {typeof symptom === 'object' ? (symptom.symptom || symptom.name || JSON.stringify(symptom)) : symptom}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {encounter.assessment && (
+                      <div className="mt-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                        <p className="text-sm font-semibold text-yellow-900 mb-2">📋 Assessment:</p>
+                        <p className="text-sm text-yellow-800">{encounter.assessment}</p>
+                      </div>
+                    )}
+                    
+                    {/* Doctor Notes - Always show with placeholder if empty */}
+                    <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-sm font-semibold text-green-900 mb-2">👨‍⚕️ Doctor Notes:</p>
+                      {encounter.doctor_notes && encounter.doctor_notes.trim() !== '' ? (
+                        <p className="text-sm text-green-800 whitespace-pre-line">{encounter.doctor_notes}</p>
+                      ) : encounter.appointment_id ? (
+                        <p className="text-sm text-gray-500 italic">Doctor notes will be added after your appointment.</p>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">No appointment booked yet. Book an appointment to consult with a doctor.</p>
+                      )}
+                    </div>
+                    
+                    {encounter.vital_signs && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-700 mb-2">💓 Vital Signs:</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {encounter.vital_signs.blood_pressure_systolic && (
+                            <div className="text-sm">
+                              <span className="text-gray-600 font-medium">BP:</span> 
+                              <span className="ml-1 font-semibold">{encounter.vital_signs.blood_pressure_systolic}/{encounter.vital_signs.blood_pressure_diastolic}</span>
+                            </div>
+                          )}
+                          {encounter.vital_signs.heart_rate && (
+                            <div className="text-sm">
+                              <span className="text-gray-600 font-medium">HR:</span> 
+                              <span className="ml-1 font-semibold">{encounter.vital_signs.heart_rate} bpm</span>
+                            </div>
+                          )}
+                          {encounter.vital_signs.temperature && (
+                            <div className="text-sm">
+                              <span className="text-gray-600 font-medium">Temp:</span> 
+                              <span className="ml-1 font-semibold">{encounter.vital_signs.temperature}°C</span>
+                            </div>
+                          )}
+                          {encounter.vital_signs.respiratory_rate && (
+                            <div className="text-sm">
+                              <span className="text-gray-600 font-medium">RR:</span> 
+                              <span className="ml-1 font-semibold">{encounter.vital_signs.respiratory_rate}/min</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

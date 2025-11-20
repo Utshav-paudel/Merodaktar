@@ -15,6 +15,12 @@ class Appointment(Base):
     doctor_id = Column(
         String, ForeignKey("doctors.id", ondelete="CASCADE"), nullable=False
     )
+    
+    # Time slot reference (optional - for new booking flow)
+    slot_id = Column(String, ForeignKey("time_slots.id", ondelete="SET NULL"), nullable=True)
+    
+    # Encounter reference (optional - link to symptom assessment/previous encounter)
+    encounter_id = Column(String, ForeignKey("encounters.id", ondelete="SET NULL"), nullable=True)
 
     appointment_date = Column(String, nullable=False)
     appointment_time = Column(String, nullable=False)

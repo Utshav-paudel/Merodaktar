@@ -13,7 +13,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     password: '',
     full_name: '',
     phone: '',
-    date_of_birth: ''
+    date_of_birth: '',
+    gender: ''
   });
   const [error, setError] = useState('');
 
@@ -126,14 +127,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 required
               />
 
-              <input
-                type="date"
-                placeholder="Date of Birth"
-                className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.date_of_birth}
-                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                required
-              />
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                <input
+                  type="date"
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.date_of_birth}
+                  onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                  max={new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
+                <select
+                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={formData.gender}
+                  onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                  required
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
             </>
           )}
 

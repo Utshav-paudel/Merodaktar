@@ -69,7 +69,6 @@ async def login_user(
 
 @router.post(
     "/register/doctor",
-    response_model=DoctorTokenResponse,
     status_code=status.HTTP_201_CREATED,
 )
 async def register_doctor(
@@ -101,6 +100,24 @@ async def register_doctor(
     except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(e.detail)
+        )
+    except Exception as e:
+        # Catch database errors like unique constraint violations
+        error_msg = str(e)
+        if "duplicate key value" in error_msg.lower():
+            if "license_number" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="License number already registered"
+                )
+            elif "email" in error_msg.lower():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Email already registered"
+                )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to register doctor"
         )
 
 

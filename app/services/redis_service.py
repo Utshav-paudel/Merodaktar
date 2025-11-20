@@ -26,7 +26,8 @@ class RedisService:
             "created_at": str(self.client.time()[0]),
             "active": "true",
         }
-        self.client.hset(session_key, mapping=session_data)
+        # Use hmset for compatibility with all redis-py versions
+        self.client.hmset(session_key, session_data)
         self.client.expire(session_key, ttl)
 
     def session_exists(self, session_id: str) -> bool:

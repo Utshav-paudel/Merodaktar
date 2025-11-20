@@ -7,6 +7,10 @@ class EHRCreate(BaseModel):
     blood_type: Optional[str] = None
     height: Optional[str] = None
     weight: Optional[str] = None
+    chronic_conditions: Optional[List[Dict]] = None
+    allergies: Optional[List[Dict]] = None
+    medications: Optional[List[Dict]] = None
+    immunizations: Optional[List[Dict]] = None
 
 
 class EHRUpdate(BaseModel):

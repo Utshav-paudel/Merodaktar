@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
-from passlib.context import CryptContext
+import bcrypt
 
 from config.settings import get_settings
 from repositories.user import UserRepository
@@ -12,7 +12,6 @@ from models.doctor import Doctor
 from core.exceptions import AuthenticationError, ValidationError
 
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
@@ -22,24 +21,30 @@ class AuthService:
         self.doctor_repo = DoctorRepository(db)
 
     @staticmethod
-    def _truncate_password(password: str) -> str:
+    def _truncate_password(password: str) -> bytes:
         """
         Truncate password to bcrypt's 72 byte limit in a consistent way.
+        Returns bytes to be used directly with bcrypt.
         """
-        password_bytes = password.encode("utf-8")[:72]
-        return password_bytes.decode("utf-8", errors="ignore")
+        password_bytes = password.encode("utf-8")
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        return password_bytes
 
     @staticmethod
     def hash_password(password: str) -> str:
-        """Hash a password"""
-        password = AuthService._truncate_password(password)
-        return pwd_context.hash(password)
+        """Hash a password using bcrypt directly"""
+        password_bytes = AuthService._truncate_password(password)
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode('utf-8')
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Verify password"""
-        plain_password = AuthService._truncate_password(plain_password)
-        return pwd_context.verify(plain_password, hashed_password)
+        """Verify password using bcrypt directly"""
+        password_bytes = AuthService._truncate_password(plain_password)
+        hashed_bytes = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(password_bytes, hashed_bytes)
 
     @staticmethod
     def create_access_token(
@@ -136,9 +141,13 @@ class AuthService:
         **kwargs
     ) -> Doctor:
         """Register a new doctor"""
-        # Check if doctor exists
+        # Check if doctor exists by email
         if self.doctor_repo.get_by_email(email):
             raise ValidationError("Email already registered")
+
+        # Check if license number already exists
+        if self.doctor_repo.get_by_license_number(license_number):
+            raise ValidationError("License number already registered")
 
         # Create doctor
         doctor_data = {

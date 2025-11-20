@@ -87,6 +87,62 @@ async def get_current_doctor(
         )
 
 
+async def get_current_user_or_doctor(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db),
+):
+    """Get current authenticated user or doctor (for endpoints that accept both)"""
+    token = credentials.credentials
+    auth_service = AuthService(db)
+
+    try:
+        payload = auth_service.decode_token(token)
+        user_id = payload.get("sub")
+        role = payload.get("role")
+
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+            )
+
+        if role == "doctor":
+            doctor_repo = DoctorRepository(db)
+            doctor = doctor_repo.get(user_id)
+            if not doctor or not doctor.is_verified:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Doctor not found or not verified",
+                )
+            # Add role attribute to doctor object for consistency
+            doctor.role = "doctor"
+            return doctor
+        elif role == "user":
+            user_repo = UserRepository(db)
+            user = user_repo.get(user_id)
+            if not user or not user.is_active:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="User not found or inactive",
+                )
+            # Add role attribute to user object for consistency
+            user.role = "patient"
+            return user
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid role",
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+        )
+
+
 def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:

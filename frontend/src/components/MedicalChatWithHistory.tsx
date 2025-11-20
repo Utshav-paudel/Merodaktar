@@ -3,14 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeftIcon, 
   PaperAirplaneIcon, 
-  MicrophoneIcon, 
   SpeakerWaveIcon, 
   SpeakerXMarkIcon,
   ChatBubbleLeftRightIcon,
   PlusIcon,
   TrashIcon,
   Bars3Icon,
-  XMarkIcon
+  XMarkIcon,
+  ClipboardDocumentListIcon,
+  MicrophoneIcon
 } from '@heroicons/react/24/outline';
 
 interface MedicalChatProps {
@@ -47,6 +48,20 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  
+  // Symptom Interview Mode
+  const [symptomInterviewMode, setSymptomInterviewMode] = useState(false);
+  const [reportId, setReportId] = useState<string>('');
+  const [currentQuestion, setCurrentQuestion] = useState<string>('');
+  const [questionNumber, setQuestionNumber] = useState<number>(0);
+  const [interviewComplete, setInterviewComplete] = useState(false);
+  
+  // Voice Recording
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -200,7 +215,300 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
     if (!newState) stopSpeaking();
   };
 
+  // Audio conversion helper functions
+  const audioBufferToWav = (audioBuffer: AudioBuffer): ArrayBuffer => {
+    const numberOfChannels = audioBuffer.numberOfChannels;
+    const sampleRate = audioBuffer.sampleRate;
+    const format = 1; // PCM
+    const bitDepth = 16;
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numberOfChannels * bytesPerSample;
+    
+    const data = new Float32Array(audioBuffer.length * numberOfChannels);
+    for (let channel = 0; channel < numberOfChannels; channel++) {
+      const channelData = audioBuffer.getChannelData(channel);
+      for (let i = 0; i < audioBuffer.length; i++) {
+        data[i * numberOfChannels + channel] = channelData[i];
+      }
+    }
+    
+    const dataLength = data.length * bytesPerSample;
+    const buffer = new ArrayBuffer(44 + dataLength);
+    const view = new DataView(buffer);
+    
+    // Write WAV header
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+    
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numberOfChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataLength, true);
+    
+    // Write audio data
+    const volume = 0.8;
+    let offset = 44;
+    for (let i = 0; i < data.length; i++) {
+      const sample = Math.max(-1, Math.min(1, data[i]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF * volume, true);
+      offset += 2;
+    }
+    
+    return buffer;
+  };
+
+  const convertWebMToWav = async (webmBlob: Blob): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const fileReader = new FileReader();
+      
+      fileReader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          const wavBuffer = audioBufferToWav(audioBuffer);
+          const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+          resolve(wavBlob);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      fileReader.onerror = () => reject(new Error('Failed to read audio file'));
+      fileReader.readAsArrayBuffer(webmBlob);
+    });
+  };
+
+  // Voice Input Handler
+  const handleVoiceInput = async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      return;
+    }
+    
+    try {
+      // Start recording
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data && event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        const webmBlob = new Blob(audioChunksRef.current, { 
+          type: 'audio/webm;codecs=opus'
+        });
+        
+        try {
+          setIsLoading(true);
+          
+          // Convert WebM to WAV
+          console.log('Converting WebM to WAV...');
+          const wavBlob = await convertWebMToWav(webmBlob);
+          console.log('Conversion complete. WAV size:', wavBlob.size);
+          
+          const formData = new FormData();
+          formData.append('audio', wavBlob, 'recording.wav');
+          
+          // Send to ASR endpoint
+          const asrResponse = await fetch('http://localhost:8000/api/v1/speech/transcribe', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+          
+          if (!asrResponse.ok) {
+            const errorData = await asrResponse.json().catch(() => ({ detail: 'ASR service failed' }));
+            throw new Error(errorData.detail || 'ASR service failed');
+          }
+          
+          const asrData = await asrResponse.json();
+          const transcript = asrData.transcription || "Couldn't transcribe audio.";
+          
+          // Set the transcription in the input field
+          setInputMessage(transcript);
+          
+        } catch (error) {
+          console.error('Voice input error:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          alert(`Sorry, I couldn't process your voice input. ${errorMessage}`);
+        } finally {
+          setIsLoading(false);
+          // Stop all tracks to release microphone
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+            streamRef.current = null;
+          }
+        }
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Microphone access error:', error);
+      alert('Microphone access denied or not supported.');
+    }
+  };
+
+  // Symptom Interview Functions
+  const startSymptomInterview = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/v1/reports/symptom-interview/start', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setReportId(data.report_id);
+        setCurrentQuestion(data.question);
+        setQuestionNumber(data.question_number);
+        setSymptomInterviewMode(true);
+        
+        // Add question as AI message
+        const aiMessage: Message = {
+          id: Date.now().toString(),
+          text: `🏥 **Symptom Assessment Started** (Question ${data.question_number})\n\n${data.question}`,
+          sender: 'ai',
+          timestamp: new Date()
+        };
+        setMessages([aiMessage]);
+        
+        if (voiceEnabled) {
+          speakText(data.question);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to start interview:', error);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        text: 'Sorry, I couldn\'t start the symptom interview. Please try again.',
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const submitSymptomAnswer = async () => {
+    if (!inputMessage.trim()) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: inputMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setInputMessage('');
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `http://localhost:8000/api/v1/reports/symptom-interview/${reportId}/answer`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ answer: inputMessage })
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.is_complete) {
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: '✅ **Symptom Assessment Complete!**\n\nThank you for completing the assessment. Your preliminary report has been generated and is available in your dashboard.',
+            sender: 'ai',
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, aiMessage]);
+          setSymptomInterviewMode(false);
+          setInterviewComplete(true);
+          
+          if (voiceEnabled) {
+            speakText('Assessment complete. Your report has been generated.');
+          }
+        } else {
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            text: `📋 **Question ${data.question_number}**\n\n${data.question}`,
+            sender: 'ai',
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, aiMessage]);
+          setCurrentQuestion(data.question);
+          setQuestionNumber(data.question_number);
+          
+          if (voiceEnabled) {
+            speakText(data.question);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error submitting answer:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: 'Sorry, there was an error processing your answer. Please try again.',
+        sender: 'ai',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const exitSymptomInterview = () => {
+    setSymptomInterviewMode(false);
+    setReportId('');
+    setCurrentQuestion('');
+    setQuestionNumber(0);
+    setInterviewComplete(false);
+    setMessages([]);
+  };
+
   const handleSendMessage = async () => {
+    // If in symptom interview mode, use symptom interview logic
+    if (symptomInterviewMode) {
+      await submitSymptomAnswer();
+      return;
+    }
+
+    // Regular chat logic
     if (!inputMessage.trim()) return;
 
     // Create new session if none exists
@@ -411,6 +719,23 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
                 </div>
               </div>
               <div className="flex items-center space-x-4">
+                {!symptomInterviewMode ? (
+                  <button
+                    onClick={startSymptomInterview}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg transition shadow-sm border bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"
+                  >
+                    <ClipboardDocumentListIcon className="h-5 w-5" />
+                    <span className="text-sm font-medium">Start Symptom Assessment</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={exitSymptomInterview}
+                    className="flex items-center space-x-2 px-4 py-2 rounded-lg transition shadow-sm border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                  >
+                    <XMarkIcon className="h-5 w-5" />
+                    <span className="text-sm font-medium">Exit Assessment</span>
+                  </button>
+                )}
                 <button
                   onClick={toggleVoice}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition shadow-sm border ${
@@ -507,13 +832,30 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
 
             {/* Input Area */}
             <div className="border-t p-4 flex-shrink-0 bg-white">
+              {symptomInterviewMode && (
+                <div className="mb-2 text-center text-sm text-teal-600 font-medium">
+                  🏥 Symptom Assessment in Progress - Question {questionNumber}
+                </div>
+              )}
               <div className="flex space-x-2">
+                <button
+                  onClick={handleVoiceInput}
+                  className={`p-2 rounded-lg transition ${
+                    isRecording
+                      ? 'bg-red-500 text-white animate-pulse'
+                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                  }`}
+                  title={isRecording ? 'Stop Recording' : 'Start Voice Input'}
+                  disabled={isLoading}
+                >
+                  <MicrophoneIcon className="h-6 w-6" />
+                </button>
                 <input
                   type="text"
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Describe your symptoms..."
+                  placeholder={symptomInterviewMode ? "Type your answer..." : "Describe your symptoms..."}
                   className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   disabled={isLoading}
                 />
