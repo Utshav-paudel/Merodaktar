@@ -107,10 +107,10 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
     <AuthLayout variant="doctor">
       <Card className="p-8 animate-fade-in-up">
         <div className="mb-7 text-center">
-          <h2 className="font-display text-2xl font-bold text-white">
+          <h2 className="font-display text-2xl font-bold text-slate-900">
             {isLogin ? 'Doctor Sign In' : 'Register as Doctor'}
           </h2>
-          <p className="mt-1.5 text-sm text-slate-400">
+          <p className="mt-1.5 text-sm text-slate-500">
             {isLogin
               ? 'Access your professional healthcare dashboard.'
               : 'Join the MeroDaktar verified provider network.'}
@@ -118,7 +118,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
         </div>
 
         {error && (
-          <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          <div className="mb-5 flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
             <ExclamationCircleIcon className="mt-0.5 h-5 w-5 shrink-0" />
             <span>{error}</span>
           </div>
@@ -127,7 +127,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Email" required>
             <div className="relative">
-              <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <Input
                 type="email"
                 placeholder="you@clinic.com"
@@ -141,7 +141,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
 
           <Field label="Password" required>
             <div className="relative">
-              <LockClosedIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <LockClosedIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <Input
                 type="password"
                 placeholder="••••••••"
@@ -157,7 +157,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
             <>
               <Field label="Full Name" required>
                 <div className="relative">
-                  <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="text"
                     placeholder="Dr. Jane Doe"
@@ -171,7 +171,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
 
               <Field label="Phone Number" required>
                 <div className="relative">
-                  <PhoneIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <PhoneIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="tel"
                     placeholder="+977 98XXXXXXXX"
@@ -198,7 +198,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
 
               <Field label="Medical License Number" required>
                 <div className="relative">
-                  <IdentificationIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <IdentificationIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="text"
                     placeholder="License No."
@@ -212,7 +212,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
 
               <Field label="Years of Experience" required>
                 <div className="relative">
-                  <BriefcaseIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <BriefcaseIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="number"
                     placeholder="e.g. 8"
@@ -227,7 +227,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
 
               <Field label="Education" required>
                 <div className="relative">
-                  <AcademicCapIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <AcademicCapIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     type="text"
                     placeholder="e.g., MBBS, MD"
@@ -241,7 +241,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
 
               <Field label="Brief Bio" hint="Optional — tell patients about your practice.">
                 <div className="relative">
-                  <DocumentTextIcon className="pointer-events-none absolute left-3.5 top-3.5 h-5 w-5 text-slate-500" />
+                  <DocumentTextIcon className="pointer-events-none absolute left-3.5 top-3.5 h-5 w-5 text-slate-400" />
                   <Textarea
                     placeholder="A short professional introduction…"
                     className="pl-11"
@@ -267,7 +267,7 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-400">
+        <p className="mt-6 text-center text-sm text-slate-500">
           {isLogin ? "Don't have an account? " : 'Already have an account? '}
           <button
             type="button"
@@ -275,17 +275,17 @@ const DoctorLogin: React.FC<DoctorLoginProps> = ({ onLogin }) => {
               setIsLogin(!isLogin);
               setError('');
             }}
-            className="font-semibold text-accent-300 transition hover:text-accent-200"
+            className="font-semibold text-accent-600 transition hover:text-accent-700"
           >
             {isLogin ? 'Register' : 'Sign In'}
           </button>
         </p>
 
-        <div className="mt-6 border-t border-white/10 pt-5 text-center">
+        <div className="mt-6 border-t border-slate-200 pt-5 text-center">
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="inline-flex items-center gap-1.5 text-sm text-slate-400 transition hover:text-white"
+            className="inline-flex items-center gap-1.5 text-sm text-slate-500 transition hover:text-slate-900"
           >
             <ArrowLeftIcon className="h-4 w-4" />
             Patient Portal

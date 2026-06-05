@@ -54,10 +54,10 @@ interface Encounter {
   created_at: string;
 }
 
-type BadgeTone = 'brand' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'slate' | 'blue';
+type BadgeTone = 'brand' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'slate' | 'sky';
 
 const statusTone = (status: string): BadgeTone => {
-  if (status === 'scheduled' || status === 'pending') return 'blue';
+  if (status === 'scheduled' || status === 'pending') return 'amber';
   if (status === 'confirmed') return 'emerald';
   if (status === 'completed') return 'slate';
   if (status === 'cancelled') return 'rose';
@@ -327,9 +327,9 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user, onLogout }) =>
 
         {/* Appointments List */}
         <Card className="overflow-hidden">
-          <div className="flex items-center gap-2 border-b border-white/10 px-6 py-4">
-            <ClipboardDocumentListIcon className="h-5 w-5 text-brand-300" />
-            <h2 className="font-display text-lg font-semibold text-white">Upcoming &amp; Past Visits</h2>
+          <div className="flex items-center gap-2 border-b border-slate-200 px-6 py-4">
+            <ClipboardDocumentListIcon className="h-5 w-5 text-brand-700" />
+            <h2 className="font-display text-lg font-semibold text-slate-900">Upcoming &amp; Past Visits</h2>
             {appointments.length > 0 && (
               <Badge tone="brand" className="ml-1">{appointments.length}</Badge>
             )}
@@ -340,7 +340,7 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user, onLogout }) =>
                 {appointments.map((apt, index) => (
                   <div
                     key={index}
-                    className="group rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition hover:border-brand-400/40 hover:bg-white/[0.06]"
+                    className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-soft transition hover:border-brand-300 hover:bg-slate-50"
                   >
                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="flex flex-1 items-start gap-4">
@@ -348,25 +348,25 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user, onLogout }) =>
                           <CalendarDaysIcon className="h-6 w-6" />
                         </span>
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-display text-base font-semibold text-white">
+                          <h3 className="font-display text-base font-semibold text-slate-900">
                             Dr. {apt.doctor_name}
                           </h3>
                           {apt.reason && (
-                            <p className="mt-1 text-sm text-slate-300">{apt.reason}</p>
+                            <p className="mt-1 text-sm text-slate-600">{apt.reason}</p>
                           )}
-                          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-400">
+                          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-500">
                             <span className="inline-flex items-center gap-1.5">
-                              <CalendarDaysIcon className="h-4 w-4 text-accent-300" />
+                              <CalendarDaysIcon className="h-4 w-4 text-accent-600" />
                               {new Date(apt.appointment_date).toLocaleDateString()}
                             </span>
                             <span className="inline-flex items-center gap-1.5">
-                              <ClockIcon className="h-4 w-4 text-accent-300" />
+                              <ClockIcon className="h-4 w-4 text-accent-600" />
                               {new Date(apt.appointment_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </span>
                           </div>
                           {apt.symptoms && (
-                            <p className="mt-2 text-xs text-slate-500">
-                              <span className="font-medium text-slate-400">Symptoms:</span> {apt.symptoms}
+                            <p className="mt-2 text-xs text-slate-400">
+                              <span className="font-medium text-slate-500">Symptoms:</span> {apt.symptoms}
                             </p>
                           )}
                         </div>
@@ -410,14 +410,14 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user, onLogout }) =>
 
       {/* Booking Form Modal */}
       {showBooking && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ink-950/70 p-4 backdrop-blur-sm sm:items-center">
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/40 p-4 backdrop-blur-sm sm:items-center">
           <Card className="my-auto w-full max-w-lg animate-fade-in-up overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
               <div className="flex items-center gap-2">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow-sm">
                   <CalendarDaysIcon className="h-5 w-5" />
                 </span>
-                <h2 className="font-display text-lg font-bold text-white">Book New Appointment</h2>
+                <h2 className="font-display text-lg font-bold text-slate-900">Book New Appointment</h2>
               </div>
               <IconButton label="Close" onClick={() => setShowBooking(false)}>
                 <XMarkIcon className="h-5 w-5" />
@@ -470,12 +470,12 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user, onLogout }) =>
                   {selectedDate && (
                     <Field label="Available Time Slots">
                       {loadingSlots ? (
-                        <div className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] py-6 text-sm text-slate-400">
+                        <div className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-slate-50 py-6 text-sm text-slate-500">
                           <Spinner className="h-4 w-4" />
                           Loading available slots...
                         </div>
                       ) : availableSlots.length > 0 ? (
-                        <div className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto rounded-xl border border-white/10 bg-white/[0.02] p-3 sm:grid-cols-4">
+                        <div className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto rounded-xl border border-slate-200 bg-slate-50 p-3 sm:grid-cols-4">
                           {availableSlots.map((slot) => {
                             const active = formData.slot_id === slot.id;
                             return (
@@ -486,8 +486,8 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user, onLogout }) =>
                                 className={cn(
                                   'inline-flex items-center justify-center gap-1 rounded-lg border px-2 py-2 text-sm font-medium transition',
                                   active
-                                    ? 'border-brand-400/60 bg-gradient-brand text-white shadow-glow-sm'
-                                    : 'border-white/10 bg-white/[0.04] text-slate-200 hover:border-brand-400/40 hover:bg-white/10'
+                                    ? 'border-transparent bg-gradient-brand text-white shadow-glow-sm'
+                                    : 'border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:bg-slate-100'
                                 )}
                               >
                                 {active && <CheckIcon className="h-3.5 w-3.5" />}
@@ -497,7 +497,7 @@ const Appointments: React.FC<AppointmentsProps> = ({ token, user, onLogout }) =>
                           })}
                         </div>
                       ) : (
-                        <div className="rounded-xl border border-dashed border-white/10 bg-white/[0.02] py-6 text-center text-sm text-slate-400">
+                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 py-6 text-center text-sm text-slate-500">
                           No available slots for this date. Try another date.
                         </div>
                       )}

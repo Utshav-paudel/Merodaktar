@@ -133,8 +133,8 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
   return (
     <div className="app-bg relative min-h-screen overflow-hidden bg-grid">
       {/* Ambient glow blobs */}
-      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-brand-500/20 blur-3xl animate-float-slow" />
-      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-500/20 blur-3xl animate-float" />
+      <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-brand-500/10 blur-3xl animate-float-slow" />
+      <div className="pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-accent-500/10 blur-3xl animate-float" />
 
       <div className="relative mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 lg:py-16">
         <div className="animate-fade-in-up space-y-6">
@@ -145,10 +145,10 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
                 <SparklesIcon className="h-6 w-6" />
               </span>
               <div>
-                <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">
+                <h1 className="font-display text-2xl font-bold text-slate-900 sm:text-3xl">
                   Symptom <span className="gradient-text">Assessment</span>
                 </h1>
-                <p className="mt-0.5 text-sm text-slate-400">AI-guided pre-visit interview</p>
+                <p className="mt-0.5 text-sm text-slate-500">AI-guided pre-visit interview</p>
               </div>
             </div>
             {isActive && (
@@ -167,16 +167,16 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
                 <div className="mb-6 inline-flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-brand text-white shadow-glow animate-pulse-glow">
                   <SparklesIcon className="h-12 w-12" />
                 </div>
-                <h2 className="font-display text-2xl font-semibold text-white">
+                <h2 className="font-display text-2xl font-semibold text-slate-900">
                   AI-Powered Symptom Assessment
                 </h2>
-                <p className="mx-auto mt-4 max-w-md text-balance text-sm leading-relaxed text-slate-400">
+                <p className="mx-auto mt-4 max-w-md text-balance text-sm leading-relaxed text-slate-600">
                   I'll ask you a series of questions about your symptoms to create a preliminary
                   medical report. This will help your doctor prepare for your appointment.
                 </p>
 
                 {error && (
-                  <div className="mx-auto mt-6 flex max-w-md items-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                  <div className="mx-auto mt-6 flex max-w-md items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                     <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
                     {error}
                   </div>
@@ -202,11 +202,11 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
             <div className="space-y-6">
               {/* Progress bar */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs font-medium text-slate-500">
+                <div className="flex items-center justify-between text-xs font-medium text-slate-400">
                   <span>Progress</span>
                   <span>{progress}%</span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-white/5 ring-1 ring-inset ring-white/10">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-50 ring-1 ring-inset ring-slate-200">
                   <div
                     className="h-full rounded-full bg-gradient-brand transition-all duration-500 ease-out"
                     style={{ width: `${progress}%` }}
@@ -221,17 +221,17 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
                     Q
                   </span>
                   <div className="flex-1 pt-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-300">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-brand-700">
                       AI Assistant
                     </p>
-                    <p className="mt-1 text-lg leading-relaxed text-slate-100">{currentQuestion}</p>
+                    <p className="mt-1 text-lg leading-relaxed text-slate-900">{currentQuestion}</p>
                   </div>
                 </div>
               </Card>
 
               {/* Answer input */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-300">Your Answer</label>
+                <label className="block text-sm font-medium text-slate-600">Your Answer</label>
                 <Textarea
                   value={answer}
                   onChange={(e) => setAnswer(e.target.value)}
@@ -240,14 +240,14 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
                   rows={4}
                   disabled={loading}
                 />
-                <p className="text-xs text-slate-500">
-                  Press <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Enter</kbd> to submit, or{' '}
-                  <kbd className="rounded bg-white/10 px-1.5 py-0.5 font-mono text-[10px] text-slate-300">Shift+Enter</kbd> for a new line
+                <p className="text-xs text-slate-400">
+                  Press <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-600">Enter</kbd> to submit, or{' '}
+                  <kbd className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-600">Shift+Enter</kbd> for a new line
                 </p>
               </div>
 
               {error && (
-                <div className="flex items-center gap-2 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                   <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
                   {error}
                 </div>
@@ -285,7 +285,7 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
                         'h-2 w-2 rounded-full transition-all duration-300',
                         i < questionNumber
                           ? 'bg-gradient-brand shadow-glow-sm'
-                          : 'bg-white/10'
+                          : 'bg-slate-200'
                       )}
                     />
                   ))}
@@ -300,26 +300,26 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
               <Card className="overflow-hidden p-0">
                 <div className="relative px-6 py-10 text-center sm:px-10">
                   <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
-                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/30">
+                  <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200">
                     <CheckCircleIcon className="h-9 w-9" />
                   </div>
-                  <h2 className="font-display text-2xl font-bold text-white">Interview Complete!</h2>
-                  <p className="mt-2 text-sm text-slate-400">
+                  <h2 className="font-display text-2xl font-bold text-slate-900">Interview Complete!</h2>
+                  <p className="mt-2 text-sm text-slate-500">
                     Your preliminary report has been generated.
                   </p>
                 </div>
 
-                <div className="space-y-5 border-t border-white/10 px-6 py-6 sm:px-10">
+                <div className="space-y-5 border-t border-slate-200 px-6 py-6 sm:px-10">
                   <div>
-                    <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                    <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                       Chief Complaint
                     </h3>
-                    <p className="mt-1.5 text-slate-200">{finalReport.chief_complaint}</p>
+                    <p className="mt-1.5 text-slate-700">{finalReport.chief_complaint}</p>
                   </div>
 
                   {finalReport.symptoms && finalReport.symptoms.length > 0 && (
                     <div>
-                      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                         Symptoms
                       </h3>
                       <div className="mt-2 flex flex-wrap gap-2">
@@ -334,7 +334,7 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
 
                   {finalReport.severity && (
                     <div>
-                      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                         Severity Level
                       </h3>
                       <div className="mt-2">
@@ -355,10 +355,10 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
 
                   {finalReport.assessment && (
                     <div>
-                      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
+                      <h3 className="text-[11px] font-semibold uppercase tracking-widest text-slate-400">
                         Assessment
                       </h3>
-                      <p className="mt-1.5 whitespace-pre-line leading-relaxed text-slate-300">
+                      <p className="mt-1.5 whitespace-pre-line leading-relaxed text-slate-600">
                         {finalReport.assessment}
                       </p>
                     </div>
@@ -389,7 +389,7 @@ const SymptomInterview: React.FC<SymptomInterviewProps> = ({ onComplete }) => {
 
           {/* Subtle loading shimmer hint while a request is in flight on the active screen */}
           {loading && isActive && (
-            <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+            <div className="flex items-center justify-center gap-2 text-xs text-slate-400">
               <Spinner className="h-4 w-4" />
               Processing your response...
             </div>

@@ -77,10 +77,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     <AuthLayout variant="patient">
       <Card className="animate-fade-in-up p-8">
         <div className="mb-7 text-center">
-          <h2 className="font-display text-2xl font-bold tracking-tight text-white">
+          <h2 className="font-display text-2xl font-bold tracking-tight text-slate-900">
             {isLogin ? 'Welcome back' : 'Create your account'}
           </h2>
-          <p className="mt-1.5 text-sm text-slate-400">
+          <p className="mt-1.5 text-sm text-slate-500">
             {isLogin
               ? 'Sign in to continue to your care dashboard.'
               : 'Join MeroDaktar and start your health journey.'}
@@ -88,8 +88,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {error && (
-          <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200 animate-fade-in">
-            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+          <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 animate-fade-in">
+            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
             <span>{error}</span>
           </div>
         )}
@@ -97,7 +97,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Field label="Email" htmlFor="email" required>
             <div className="relative">
-              <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <Input
                 id="email"
                 type="email"
@@ -112,7 +112,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           <Field label="Password" htmlFor="password" required>
             <div className="relative">
-              <LockClosedIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <LockClosedIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
               <Input
                 id="password"
                 type="password"
@@ -131,7 +131,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <>
               <Field label="Full Name" htmlFor="full_name" required>
                 <div className="relative">
-                  <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     id="full_name"
                     type="text"
@@ -146,7 +146,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
               <Field label="Phone Number" htmlFor="phone" required>
                 <div className="relative">
-                  <PhoneIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <PhoneIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     id="phone"
                     type="tel"
@@ -161,11 +161,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
               <Field label="Date of Birth" htmlFor="date_of_birth" required>
                 <div className="relative">
-                  <CalendarDaysIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <CalendarDaysIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <Input
                     id="date_of_birth"
                     type="date"
-                    className="pl-11 [color-scheme:dark]"
+                    className="pl-11 [color-scheme:light]"
                     value={formData.date_of_birth}
                     onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                     max={new Date().toISOString().split('T')[0]}
@@ -195,21 +195,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </Button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-400">
+        <p className="mt-6 text-center text-sm text-slate-500">
           {isLogin ? "Don't have an account? " : 'Already have an account? '}
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="font-semibold text-brand-300 transition-colors hover:text-brand-200"
+            className="font-semibold text-brand-700 transition-colors hover:text-brand-600"
           >
             {isLogin ? 'Register' : 'Sign In'}
           </button>
         </p>
 
-        <div className="mt-6 border-t border-white/10 pt-5 text-center">
+        <div className="mt-6 border-t border-slate-200 pt-5 text-center">
           <a
             href="/doctor/login"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-300 transition-colors hover:text-accent-200"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-700 transition-colors hover:text-accent-600"
           >
             Doctor Portal
             <ArrowRightIcon className="h-4 w-4" />

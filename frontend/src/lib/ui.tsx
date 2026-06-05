@@ -1,8 +1,9 @@
 import React from 'react';
+import Markdown from 'react-markdown';
 
 /* ============================================================
-   MeroDaktar shared UI primitives (Health-Tech Gradient theme)
-   Import from components as:  import { Button, Card, ... } from '../lib/ui';
+   MeroDaktar shared UI primitives — Clinical Calm (light, medical)
+   Import as:  import { Button, Card, ChatMarkdown, ... } from '../lib/ui';
    ============================================================ */
 
 export function cn(...classes: Array<string | false | null | undefined>): string {
@@ -14,15 +15,13 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const buttonBase =
-  'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70 disabled:cursor-not-allowed disabled:opacity-50';
+  'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 disabled:cursor-not-allowed disabled:opacity-50';
 
 const buttonVariants: Record<ButtonVariant, string> = {
-  primary:
-    'bg-gradient-brand text-white shadow-glow-sm hover:shadow-glow hover:brightness-110 active:scale-[0.98]',
-  secondary:
-    'border border-white/10 bg-white/[0.05] text-slate-100 backdrop-blur-xl hover:border-white/20 hover:bg-white/10',
-  ghost: 'text-slate-300 hover:bg-white/5 hover:text-white',
-  danger: 'bg-rose-500/90 text-white hover:bg-rose-500 focus-visible:ring-rose-400/70',
+  primary: 'bg-gradient-brand text-white shadow-glow-sm hover:shadow-glow hover:brightness-[1.04] active:scale-[0.98]',
+  secondary: 'border border-slate-200 bg-white text-slate-700 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700',
+  ghost: 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+  danger: 'bg-rose-500 text-white hover:bg-rose-600 focus-visible:ring-rose-400/50',
 };
 
 const buttonSizes: Record<ButtonSize, string> = {
@@ -53,13 +52,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => (
   <button
-    className={cn(
-      buttonBase,
-      buttonVariants[variant],
-      buttonSizes[size],
-      fullWidth && 'w-full',
-      className
-    )}
+    className={cn(buttonBase, buttonVariants[variant], buttonSizes[size], fullWidth && 'w-full', className)}
     disabled={disabled || loading}
     {...props}
   >
@@ -79,7 +72,7 @@ export const IconButton: React.FC<IconButtonProps> = ({ label, className, childr
     aria-label={label}
     title={label}
     className={cn(
-      'inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-300 transition hover:bg-white/10 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-400/70',
+      'inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40',
       className
     )}
     {...props}
@@ -98,9 +91,9 @@ export const Card: React.FC<CardProps> = ({ hover, as, className, children, ...p
   return (
     <Comp
       className={cn(
-        'rounded-2xl border border-white/10 bg-white/[0.04] shadow-glass backdrop-blur-xl',
+        'rounded-2xl border border-slate-200/80 bg-white shadow-soft',
         hover &&
-          'cursor-pointer transition duration-300 hover:-translate-y-0.5 hover:border-brand-400/40 hover:bg-white/[0.06] hover:shadow-glow-sm',
+          'cursor-pointer transition duration-300 hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-card',
         className
       )}
       {...props}
@@ -112,12 +105,10 @@ export const Card: React.FC<CardProps> = ({ hover, as, className, children, ...p
 
 /* ---------- Inputs ---------- */
 const fieldClass =
-  'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 transition placeholder:text-slate-500 focus:border-brand-400/60 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-brand-500/20';
+  'w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-slate-800 transition placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20';
 
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
-  ({ className, ...props }, ref) => (
-    <input ref={ref} className={cn(fieldClass, className)} {...props} />
-  )
+  ({ className, ...props }, ref) => <input ref={ref} className={cn(fieldClass, className)} {...props} />
 );
 Input.displayName = 'Input';
 
@@ -133,11 +124,7 @@ export const Select = React.forwardRef<
   HTMLSelectElement,
   React.SelectHTMLAttributes<HTMLSelectElement>
 >(({ className, children, ...props }, ref) => (
-  <select
-    ref={ref}
-    className={cn(fieldClass, 'appearance-none bg-ink-800 [&>option]:bg-ink-800', className)}
-    {...props}
-  >
+  <select ref={ref} className={cn(fieldClass, 'appearance-none', className)} {...props}>
     {children}
   </select>
 ));
@@ -154,26 +141,27 @@ export interface FieldProps {
 export const Field: React.FC<FieldProps> = ({ label, htmlFor, hint, required, className, children }) => (
   <div className={cn('space-y-1.5', className)}>
     {label && (
-      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-300">
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-700">
         {label}
-        {required && <span className="ml-0.5 text-brand-400">*</span>}
+        {required && <span className="ml-0.5 text-brand-600">*</span>}
       </label>
     )}
     {children}
-    {hint && <p className="text-xs text-slate-500">{hint}</p>}
+    {hint && <p className="text-xs text-slate-400">{hint}</p>}
   </div>
 );
 
 /* ---------- Badge ---------- */
-export type BadgeTone = 'brand' | 'cyan' | 'emerald' | 'amber' | 'rose' | 'slate' | 'blue';
+export type BadgeTone = 'brand' | 'emerald' | 'amber' | 'rose' | 'slate' | 'blue' | 'sky' | 'cyan';
 const badgeTones: Record<BadgeTone, string> = {
-  brand: 'bg-brand-500/15 text-brand-200 ring-brand-400/30',
-  cyan: 'bg-accent-500/15 text-accent-200 ring-accent-400/30',
-  emerald: 'bg-emerald-500/15 text-emerald-200 ring-emerald-400/30',
-  amber: 'bg-amber-500/15 text-amber-200 ring-amber-400/30',
-  rose: 'bg-rose-500/15 text-rose-200 ring-rose-400/30',
-  slate: 'bg-white/10 text-slate-300 ring-white/15',
-  blue: 'bg-sky-500/15 text-sky-200 ring-sky-400/30',
+  brand: 'bg-brand-50 text-brand-700 ring-brand-200',
+  emerald: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  amber: 'bg-amber-50 text-amber-700 ring-amber-200',
+  rose: 'bg-rose-50 text-rose-700 ring-rose-200',
+  slate: 'bg-slate-100 text-slate-600 ring-slate-200',
+  blue: 'bg-sky-50 text-sky-700 ring-sky-200',
+  sky: 'bg-sky-50 text-sky-700 ring-sky-200',
+  cyan: 'bg-cyan-50 text-cyan-700 ring-cyan-200',
 };
 export const Badge: React.FC<{ tone?: BadgeTone; className?: string; children: React.ReactNode }> = ({
   tone = 'slate',
@@ -193,26 +181,14 @@ export const Badge: React.FC<{ tone?: BadgeTone; className?: string; children: R
 
 /* ---------- Spinner ---------- */
 export const Spinner: React.FC<{ className?: string }> = ({ className }) => (
-  <svg
-    className={cn('animate-spin text-current', className || 'h-5 w-5')}
-    viewBox="0 0 24 24"
-    fill="none"
-  >
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path
-      className="opacity-90"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-    />
+  <svg className={cn('animate-spin text-current', className || 'h-5 w-5')} viewBox="0 0 24 24" fill="none">
+    <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+    <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
   </svg>
 );
 
 /* ---------- Avatar ---------- */
-export const Avatar: React.FC<{ name?: string; src?: string; className?: string }> = ({
-  name,
-  src,
-  className,
-}) => {
+export const Avatar: React.FC<{ name?: string; src?: string; className?: string }> = ({ name, src, className }) => {
   const initials = (name || '?')
     .split(' ')
     .map((n) => n[0])
@@ -224,12 +200,12 @@ export const Avatar: React.FC<{ name?: string; src?: string; className?: string 
     <img
       src={src}
       alt={name || 'avatar'}
-      className={cn('rounded-full object-cover ring-2 ring-white/10', className || 'h-10 w-10')}
+      className={cn('rounded-full object-cover ring-2 ring-white', className || 'h-10 w-10')}
     />
   ) : (
     <span
       className={cn(
-        'inline-flex items-center justify-center rounded-full bg-gradient-brand text-sm font-bold text-white ring-2 ring-white/10',
+        'inline-flex items-center justify-center rounded-full bg-gradient-brand text-sm font-bold text-white ring-2 ring-white',
         className || 'h-10 w-10'
       )}
     >
@@ -249,16 +225,13 @@ export const StatCard: React.FC<{
   <Card className="p-5">
     <div className="flex items-start justify-between gap-3">
       <div>
-        <p className="text-sm font-medium text-slate-400">{label}</p>
-        <p className="mt-2 font-display text-3xl font-bold text-white">{value}</p>
-        {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
+        <p className="text-sm font-medium text-slate-500">{label}</p>
+        <p className="mt-2 font-display text-3xl font-bold text-slate-900">{value}</p>
+        {sub && <p className="mt-1 text-xs text-slate-400">{sub}</p>}
       </div>
       {icon && (
         <span
-          className={cn(
-            'inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-inset',
-            badgeTones[tone]
-          )}
+          className={cn('inline-flex h-11 w-11 items-center justify-center rounded-xl ring-1 ring-inset', badgeTones[tone])}
         >
           {icon}
         </span>
@@ -282,8 +255,8 @@ export const PageHeader: React.FC<{
         </span>
       )}
       <div>
-        <h1 className="font-display text-2xl font-bold text-white sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-slate-400">{subtitle}</p>}
+        <h1 className="font-display text-2xl font-bold text-slate-900 sm:text-3xl">{title}</h1>
+        {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
       </div>
     </div>
     {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
@@ -297,14 +270,22 @@ export const EmptyState: React.FC<{
   description?: string;
   action?: React.ReactNode;
 }> = ({ icon, title, description, action }) => (
-  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-14 text-center">
+  <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 px-6 py-14 text-center">
     {icon && (
-      <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-brand-300">
+      <span className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
         {icon}
       </span>
     )}
-    <p className="font-display text-lg font-semibold text-white">{title}</p>
-    {description && <p className="mt-1 max-w-sm text-sm text-slate-400">{description}</p>}
+    <p className="font-display text-lg font-semibold text-slate-900">{title}</p>
+    {description && <p className="mt-1 max-w-sm text-sm text-slate-500">{description}</p>}
     {action && <div className="mt-5">{action}</div>}
+  </div>
+);
+
+/* ---------- Chat markdown ---------- */
+/* Renders an AI message's markdown (bold, lists, paragraphs) instead of raw ** / * text. */
+export const ChatMarkdown: React.FC<{ children: string; className?: string }> = ({ children, className }) => (
+  <div className={cn('chat-md', className)}>
+    <Markdown>{children}</Markdown>
   </div>
 );

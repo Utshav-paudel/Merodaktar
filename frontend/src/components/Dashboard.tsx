@@ -135,7 +135,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       description: 'Get instant health advice & symptom assessment.',
       icon: ChatBubbleLeftRightIcon,
       to: '/chat',
-      accent: 'from-brand-500/30 to-brand-400/10 text-brand-200',
+      accent: 'from-brand-100 to-brand-50 text-brand-700',
       glow: 'group-hover:shadow-glow-sm',
     },
     {
@@ -143,7 +143,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       description: 'Schedule a consultation with a doctor.',
       icon: CalendarDaysIcon,
       to: '/appointments',
-      accent: 'from-emerald-500/30 to-emerald-400/10 text-emerald-200',
+      accent: 'from-emerald-100 to-emerald-50 text-emerald-700',
       glow: '',
     },
     {
@@ -151,7 +151,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       description: 'View your complete medical history & vitals.',
       icon: ClipboardDocumentListIcon,
       to: '/ehr',
-      accent: 'from-accent-500/30 to-accent-400/10 text-accent-200',
+      accent: 'from-accent-100 to-accent-50 text-accent-700',
       glow: '',
     },
     {
@@ -159,7 +159,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
       description: 'AI consultation with hands-free voice support.',
       icon: MicrophoneIcon,
       to: '/chat',
-      accent: 'from-amber-500/30 to-amber-400/10 text-amber-200',
+      accent: 'from-amber-100 to-amber-50 text-amber-700',
       glow: '',
     },
   ];
@@ -168,19 +168,19 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
     <AppLayout role="patient" user={user} onLogout={onLogout} title="Dashboard">
       <div className="animate-fade-in-up space-y-8">
         {/* Welcome hero banner */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-brand-600/30 via-ink-850 to-accent-600/20 p-8 shadow-glass backdrop-blur-xl sm:p-10">
-          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand-500/30 blur-3xl animate-float-slow" />
-          <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-accent-500/20 blur-3xl animate-float" />
+        <div className="relative overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-brand-50 via-white to-accent-50 p-8 shadow-soft sm:p-10">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full bg-brand-200/40 blur-3xl animate-float-slow" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/3 h-56 w-56 rounded-full bg-accent-200/30 blur-3xl animate-float" />
           <div className="relative">
             <Badge tone="brand">
               <SparklesIcon className="h-3.5 w-3.5" />
               Your health hub
             </Badge>
-            <h2 className="mt-4 font-display text-3xl font-bold text-white sm:text-4xl">
+            <h2 className="mt-4 font-display text-3xl font-bold text-slate-900 sm:text-4xl">
               Welcome back,{' '}
               <span className="gradient-text">{user?.full_name || 'Patient'}</span>
             </h2>
-            <p className="mt-2 max-w-xl text-sm text-slate-300 sm:text-base">
+            <p className="mt-2 max-w-xl text-sm text-slate-600 sm:text-base">
               Your health journey starts here. How can we help you today?
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
@@ -222,7 +222,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
         {/* Quick actions */}
         <div>
-          <h3 className="mb-4 font-display text-lg font-semibold text-white">Quick Actions</h3>
+          <h3 className="mb-4 font-display text-lg font-semibold text-slate-900">Quick Actions</h3>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {quickActions.map((action) => {
               const Icon = action.icon;
@@ -236,17 +236,17 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                 >
                   <span
                     className={cn(
-                      'inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ring-inset ring-white/10 transition group-hover:scale-105',
+                      'inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ring-1 ring-inset ring-slate-200 transition group-hover:scale-105',
                       action.accent
                     )}
                   >
                     <Icon className="h-6 w-6" />
                   </span>
-                  <h4 className="mt-4 font-display text-base font-semibold text-white">
+                  <h4 className="mt-4 font-display text-base font-semibold text-slate-900">
                     {action.title}
                   </h4>
-                  <p className="mt-1 text-sm text-slate-400">{action.description}</p>
-                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-300 transition group-hover:gap-2">
+                  <p className="mt-1 text-sm text-slate-500">{action.description}</p>
+                  <span className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-brand-700 transition group-hover:gap-2">
                     Open
                     <ArrowRightIcon className="h-4 w-4" />
                   </span>
@@ -259,8 +259,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {/* Recent Consultations */}
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-              <h3 className="font-display text-lg font-semibold text-white">Recent Consultations</h3>
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h3 className="font-display text-lg font-semibold text-slate-900">Recent Consultations</h3>
               <Badge tone="brand">{records.length}</Badge>
             </div>
             <div className="p-6">
@@ -269,12 +269,12 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   {records.slice(0, 5).map((record, index) => (
                     <div
                       key={index}
-                      className="group relative rounded-xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+                      className="group relative rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 hover:bg-slate-100"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-slate-100">{record.symptoms}</p>
-                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                          <p className="truncate font-medium text-slate-900">{record.symptoms}</p>
+                          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                             <span className="inline-flex items-center gap-1">
                               <ClockIcon className="h-3.5 w-3.5" />
                               {new Date(record.consultation_date).toLocaleDateString()}
@@ -286,7 +286,7 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                         </div>
                         <button
                           onClick={() => deleteConsultation(record.id)}
-                          className="rounded-lg p-1.5 text-slate-500 transition hover:bg-rose-500/15 hover:text-rose-300"
+                          className="rounded-lg p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
                           title="Delete Consultation"
                         >
                           <XMarkIcon className="h-4 w-4" />
@@ -317,8 +317,8 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
 
           {/* Upcoming Appointments */}
           <Card className="overflow-hidden">
-            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-              <h3 className="font-display text-lg font-semibold text-white">Upcoming Appointments</h3>
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h3 className="font-display text-lg font-semibold text-slate-900">Upcoming Appointments</h3>
               <Badge tone="emerald">{appointments.length}</Badge>
             </div>
             <div className="p-6">
@@ -327,14 +327,14 @@ const Dashboard: React.FC<DashboardProps> = ({ user, onLogout }) => {
                   {appointments.map((apt, index) => (
                     <div
                       key={index}
-                      className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 hover:bg-slate-100"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
-                          <p className="font-medium text-slate-100">Dr. {apt.doctor_name}</p>
-                          <p className="mt-0.5 truncate text-sm text-slate-400">{apt.reason}</p>
+                          <p className="font-medium text-slate-900">Dr. {apt.doctor_name}</p>
+                          <p className="mt-0.5 truncate text-sm text-slate-500">{apt.reason}</p>
                           <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-300">
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600">
                               <CalendarDaysIcon className="h-3.5 w-3.5" />
                               {apt.appointment_date} at {apt.appointment_time}
                             </span>

@@ -63,7 +63,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-ink-950 text-slate-200">
+      <div className="min-h-screen bg-canvas-50 text-slate-700">
         <Routes>
           {/* Patient Routes */}
           <Route 

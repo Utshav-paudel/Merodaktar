@@ -499,8 +499,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
     return (
       <AppLayout role="doctor" onLogout={onLogout} title="Dashboard">
         <div className="flex min-h-[60vh] items-center justify-center">
-          <div className="flex flex-col items-center gap-4 text-slate-400">
-            <Spinner className="h-10 w-10 text-brand-400" />
+          <div className="flex flex-col items-center gap-4 text-slate-500">
+            <Spinner className="h-10 w-10 text-brand-600" />
             <p className="text-sm">Loading your dashboard...</p>
           </div>
         </div>
@@ -524,10 +524,10 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
       <div className="animate-fade-in-up space-y-8">
         {/* Welcome / header */}
         <div className="flex flex-col gap-2">
-          <h2 className="font-display text-3xl font-bold text-white">
+          <h2 className="font-display text-3xl font-bold text-slate-900">
             Welcome back{profile ? `, Dr. ${profile.full_name}` : ''}
           </h2>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-slate-500">
             {profile?.specialization
               ? `${profile.specialization} — here is what's happening today.`
               : "Here is what's happening today."}
@@ -545,7 +545,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                   'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
                   activeTab === key
                     ? 'bg-gradient-brand text-white shadow-glow-sm'
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -589,7 +589,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                   label="Total Patients"
                   value={stats.total_patients}
                   icon={<UsersIcon className="h-6 w-6" />}
-                  tone="cyan"
+                  tone="blue"
                 />
               </div>
             )}
@@ -597,21 +597,21 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
             {/* Today's Appointments */}
             <Card className="p-6">
               <div className="mb-5 flex items-center gap-2">
-                <ClockIcon className="h-5 w-5 text-brand-300" />
-                <h3 className="font-display text-lg font-semibold text-white">Today's Appointments</h3>
+                <ClockIcon className="h-5 w-5 text-brand-700" />
+                <h3 className="font-display text-lg font-semibold text-slate-900">Today's Appointments</h3>
               </div>
               {todayAppointments.length > 0 ? (
                 <div className="space-y-3">
                   {todayAppointments.map((apt) => (
                     <div
                       key={apt.id}
-                      className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 hover:bg-slate-100"
                     >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex-1">
-                          <p className="font-semibold text-white">{apt.patient_name}</p>
-                          <p className="mt-0.5 text-sm text-slate-400">{apt.appointment_time}</p>
-                          <p className="mt-1 text-sm text-slate-500">Reason: {apt.reason}</p>
+                          <p className="font-semibold text-slate-900">{apt.patient_name}</p>
+                          <p className="mt-0.5 text-sm text-slate-500">{apt.appointment_time}</p>
+                          <p className="mt-1 text-sm text-slate-400">Reason: {apt.reason}</p>
                           <div className="mt-2">
                             <Badge tone={statusTone(apt.status)}>{apt.status.toUpperCase()}</Badge>
                           </div>
@@ -630,7 +630,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                           <IconButton
                             label="Delete Appointment"
                             onClick={() => deleteAppointment(apt.id)}
-                            className="hover:bg-rose-500/10 hover:text-rose-300"
+                            className="hover:bg-rose-50 hover:text-rose-600"
                           >
                             <TrashIcon className="h-5 w-5" />
                           </IconButton>
@@ -654,14 +654,14 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
         {activeTab === 'appointments' && (
           <Card className="p-6">
             <div className="mb-5 flex items-center gap-2">
-              <CalendarDaysIcon className="h-5 w-5 text-brand-300" />
-              <h3 className="font-display text-lg font-semibold text-white">All Appointments</h3>
+              <CalendarDaysIcon className="h-5 w-5 text-brand-700" />
+              <h3 className="font-display text-lg font-semibold text-slate-900">All Appointments</h3>
             </div>
             {appointments.length > 0 ? (
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-white/5">
+                <table className="min-w-full divide-y divide-slate-200">
                   <thead>
-                    <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       <th className="px-4 py-3">Patient</th>
                       <th className="px-4 py-3">Date</th>
                       <th className="px-4 py-3">Time</th>
@@ -670,13 +670,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                       <th className="px-4 py-3">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5 text-sm text-slate-300">
+                  <tbody className="divide-y divide-slate-200 text-sm text-slate-600">
                     {appointments.map((apt) => (
-                      <tr key={apt.id} className="transition hover:bg-white/[0.03]">
-                        <td className="whitespace-nowrap px-4 py-4 font-medium text-white">{apt.patient_name}</td>
+                      <tr key={apt.id} className="transition hover:bg-slate-50">
+                        <td className="whitespace-nowrap px-4 py-4 font-medium text-slate-900">{apt.patient_name}</td>
                         <td className="whitespace-nowrap px-4 py-4">{new Date(apt.appointment_date).toLocaleDateString()}</td>
                         <td className="whitespace-nowrap px-4 py-4">{apt.appointment_time}</td>
-                        <td className="px-4 py-4 text-slate-400">{apt.reason}</td>
+                        <td className="px-4 py-4 text-slate-500">{apt.reason}</td>
                         <td className="whitespace-nowrap px-4 py-4">
                           <Select
                             value={apt.status}
@@ -728,13 +728,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
         {activeTab === 'patients' && (
           <Card className="p-6">
             <div className="mb-5 flex items-center gap-2">
-              <UsersIcon className="h-5 w-5 text-brand-300" />
-              <h3 className="font-display text-lg font-semibold text-white">My Patients</h3>
+              <UsersIcon className="h-5 w-5 text-brand-700" />
+              <h3 className="font-display text-lg font-semibold text-slate-900">My Patients</h3>
             </div>
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Patient List */}
               <div>
-                <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">Patient List</h4>
+                <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-500">Patient List</h4>
                 {patients.length > 0 ? (
                   <div className="space-y-3">
                     {patients.map((patient) => (
@@ -744,8 +744,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                         className={cn(
                           'w-full rounded-xl border p-4 text-left transition',
                           selectedPatient === patient.id
-                            ? 'border-brand-400/50 bg-brand-500/10 shadow-glow-sm'
-                            : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
+                            ? 'border-brand-300 bg-brand-50 shadow-glow-sm'
+                            : 'border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100'
                         )}
                         onClick={() => fetchPatientEncounters(patient.id)}
                       >
@@ -754,9 +754,9 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                             {(patient.name || '?').charAt(0).toUpperCase()}
                           </span>
                           <div className="min-w-0">
-                            <h4 className="truncate font-semibold text-white">{patient.name}</h4>
-                            <p className="truncate text-sm text-slate-400">{patient.email}</p>
-                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                            <h4 className="truncate font-semibold text-slate-900">{patient.name}</h4>
+                            <p className="truncate text-sm text-slate-500">{patient.email}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500">
                               <Badge tone="slate">{patient.total_appointments} appointment(s)</Badge>
                               {patient.last_visit && (
                                 <span>Last visit: {new Date(patient.last_visit).toLocaleDateString()}</span>
@@ -779,11 +779,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
               {/* Patient Encounters */}
               <div>
                 <div className="mb-3 flex items-center justify-between">
-                  <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Medical History</h4>
+                  <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-500">Medical History</h4>
                   {patientEncounters.length > 0 && (
                     <button
                       onClick={selectAllEncounters}
-                      className="text-sm font-medium text-brand-300 transition hover:text-brand-200"
+                      className="text-sm font-medium text-brand-700 transition hover:text-brand-800"
                     >
                       {selectedEncounters.length === patientEncounters.length ? 'Deselect All' : 'Select All'}
                     </button>
@@ -800,7 +800,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {selectedPatient !== null && loadingEncounters && (
                   <div className="flex items-center justify-center py-12">
-                    <Spinner className="h-8 w-8 text-brand-400" />
+                    <Spinner className="h-8 w-8 text-brand-600" />
                   </div>
                 )}
 
@@ -820,8 +820,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                         className={cn(
                           'rounded-xl border p-4 transition',
                           selectedEncounters.includes(encounter.id)
-                            ? 'border-brand-400/50 bg-brand-500/10'
-                            : 'border-white/10 bg-white/[0.03]'
+                            ? 'border-brand-300 bg-brand-50'
+                            : 'border-slate-200 bg-slate-50'
                         )}
                       >
                         <div className="mb-3 flex items-start justify-between gap-3">
@@ -830,11 +830,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                               type="checkbox"
                               checked={selectedEncounters.includes(encounter.id)}
                               onChange={() => toggleEncounterSelection(encounter.id)}
-                              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500/40"
+                              className="mt-1 h-4 w-4 rounded border-slate-300 bg-white text-brand-600 focus:ring-brand-500/40"
                             />
                             <div>
-                              <h5 className="font-semibold text-white">{encounter.chief_complaint}</h5>
-                              <p className="text-sm text-slate-400">
+                              <h5 className="font-semibold text-slate-900">{encounter.chief_complaint}</h5>
+                              <p className="text-sm text-slate-500">
                                 {new Date(encounter.encounter_date).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'long',
@@ -854,12 +854,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                         {/* Symptoms */}
                         {encounter.symptoms && encounter.symptoms.length > 0 && (
                           <div className="mb-3">
-                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Symptoms</h6>
+                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Symptoms</h6>
                             <div className="flex flex-wrap gap-1.5">
                               {encounter.symptoms.map((symptom: any, idx: number) => (
                                 <span
                                   key={idx}
-                                  className="rounded-lg bg-white/10 px-2 py-1 text-xs text-slate-300"
+                                  className="rounded-lg bg-slate-100 px-2 py-1 text-xs text-slate-600"
                                 >
                                   {typeof symptom === 'string' ? symptom : symptom.symptom || symptom.name || JSON.stringify(symptom)}
                                 </span>
@@ -871,8 +871,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                         {/* Assessment Report - Truncated */}
                         {encounter.assessment_report && (
                           <div className="mb-3">
-                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Assessment</h6>
-                            <div className="rounded-lg bg-white/5 p-2 text-sm text-slate-300">
+                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Assessment</h6>
+                            <div className="rounded-lg bg-white p-2 text-sm text-slate-600">
                               {encounter.assessment_report.length > 200
                                 ? `${encounter.assessment_report.substring(0, 200)}...`
                                 : encounter.assessment_report
@@ -884,8 +884,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                         {/* Doctor's Note - Truncated */}
                         {encounter.doctor_notes && (
                           <div className="mb-3">
-                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Doctor's Note</h6>
-                            <p className="text-sm text-slate-300">
+                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Doctor's Note</h6>
+                            <p className="text-sm text-slate-600">
                               {encounter.doctor_notes.length > 150
                                 ? `${encounter.doctor_notes.substring(0, 150)}...`
                                 : encounter.doctor_notes
@@ -896,7 +896,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                         {/* Recommended Specialization */}
                         {encounter.recommended_specialization && (
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
                             <span className="font-semibold">Recommended:</span>
                             <Badge tone="blue">
                               {encounter.recommended_specialization.replace('_', ' ').toUpperCase()}
@@ -909,9 +909,9 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                 )}
 
                 {selectedEncounters.length > 0 && (
-                  <div className="mt-4 rounded-xl border border-brand-400/30 bg-brand-500/10 p-3">
-                    <p className="text-sm text-slate-200">
-                      <span className="font-semibold text-white">{selectedEncounters.length}</span> encounter(s) selected
+                  <div className="mt-4 rounded-xl border border-brand-200 bg-brand-50 p-3">
+                    <p className="text-sm text-slate-600">
+                      <span className="font-semibold text-slate-900">{selectedEncounters.length}</span> encounter(s) selected
                     </p>
                   </div>
                 )}
@@ -925,8 +925,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
           <Card className="p-6">
             <div className="mb-5 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ClockIcon className="h-5 w-5 text-brand-300" />
-                <h3 className="font-display text-lg font-semibold text-white">My Schedule</h3>
+                <ClockIcon className="h-5 w-5 text-brand-700" />
+                <h3 className="font-display text-lg font-semibold text-slate-900">My Schedule</h3>
               </div>
               <Button
                 variant="primary"
@@ -947,7 +947,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
             </div>
             {scheduleLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Spinner className="h-8 w-8 text-brand-400" />
+                <Spinner className="h-8 w-8 text-brand-600" />
               </div>
             ) : (
               <div>
@@ -964,19 +964,19 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                   {schedule.map((day) => (
                     <div
                       key={day.id}
-                      className="flex flex-col items-start justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 sm:flex-row"
+                      className="flex flex-col items-start justify-between rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300 sm:flex-row"
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-white">{getDayName(day.day_of_week)}</p>
+                          <p className="font-semibold text-slate-900">{getDayName(day.day_of_week)}</p>
                           {day.is_available ? (
                             <Badge tone="emerald">Available</Badge>
                           ) : (
                             <Badge tone="slate">Off</Badge>
                           )}
                         </div>
-                        <p className="mt-1 text-sm text-slate-400">{day.start_time} - {day.end_time}</p>
-                        <p className="text-sm text-slate-500">Slot Duration: {day.slot_duration_minutes} mins</p>
+                        <p className="mt-1 text-sm text-slate-500">{day.start_time} - {day.end_time}</p>
+                        <p className="text-sm text-slate-400">Slot Duration: {day.slot_duration_minutes} mins</p>
                       </div>
                       <div className="mt-3 flex flex-shrink-0 items-center gap-2 sm:mt-0 sm:ml-4">
                         <Button
@@ -1011,8 +1011,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Add/Edit Schedule Form */}
                 {editingDay !== null && (
-                  <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-5">
-                    <h4 className="mb-4 font-display text-base font-semibold text-white">
+                  <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                    <h4 className="mb-4 font-display text-base font-semibold text-slate-900">
                       {editingDay === -1 ? 'Add New Schedule' : 'Edit Schedule'}
                     </h4>
                     <div className="grid grid-cols-1 gap-4">
@@ -1051,12 +1051,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                           onChange={(e) => setScheduleForm({ ...scheduleForm, slot_duration_minutes: Number(e.target.value) })}
                         />
                       </Field>
-                      <label className="flex items-center gap-2 text-sm text-slate-300">
+                      <label className="flex items-center gap-2 text-sm text-slate-600">
                         <input
                           type="checkbox"
                           checked={scheduleForm.is_available}
                           onChange={(e) => setScheduleForm({ ...scheduleForm, is_available: e.target.checked })}
-                          className="h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500/40"
+                          className="h-4 w-4 rounded border-slate-300 bg-white text-brand-600 focus:ring-brand-500/40"
                         />
                         Available
                       </label>
@@ -1079,11 +1079,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
       {/* Notes Modal */}
       {selectedAppointment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
           <Card className="max-h-[90vh] w-full max-w-4xl overflow-y-auto p-6 animate-fade-in-up">
             <div className="mb-5 flex items-center gap-2">
-              <PencilSquareIcon className="h-5 w-5 text-brand-300" />
-              <h3 className="font-display text-xl font-semibold text-white">
+              <PencilSquareIcon className="h-5 w-5 text-brand-700" />
+              <h3 className="font-display text-xl font-semibold text-slate-900">
                 Add Medical Notes &mdash; {selectedAppointment.patient_name}
               </h3>
             </div>
@@ -1093,32 +1093,32 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
               <div className="mb-6 space-y-4">
                 {/* Patient Summary */}
                 {encounterDetails.patient_summary && (
-                  <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-sky-200">
+                  <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-sky-700">
                       <UserCircleIcon className="h-5 w-5" /> Patient Information
                     </h4>
-                    <div className="grid grid-cols-2 gap-3 text-sm text-slate-300 md:grid-cols-3">
-                      <div><strong className="text-white">Name:</strong> {encounterDetails.patient_summary.patient_name}</div>
-                      <div><strong className="text-white">Age:</strong> {encounterDetails.patient_summary.age}</div>
-                      <div><strong className="text-white">Gender:</strong> {encounterDetails.patient_summary.gender}</div>
-                      <div><strong className="text-white">Blood Type:</strong> {encounterDetails.patient_summary.blood_type}</div>
-                      <div><strong className="text-white">Height:</strong> {encounterDetails.patient_summary.height}</div>
-                      <div><strong className="text-white">Weight:</strong> {encounterDetails.patient_summary.weight}</div>
+                    <div className="grid grid-cols-2 gap-3 text-sm text-slate-600 md:grid-cols-3">
+                      <div><strong className="text-slate-900">Name:</strong> {encounterDetails.patient_summary.patient_name}</div>
+                      <div><strong className="text-slate-900">Age:</strong> {encounterDetails.patient_summary.age}</div>
+                      <div><strong className="text-slate-900">Gender:</strong> {encounterDetails.patient_summary.gender}</div>
+                      <div><strong className="text-slate-900">Blood Type:</strong> {encounterDetails.patient_summary.blood_type}</div>
+                      <div><strong className="text-slate-900">Height:</strong> {encounterDetails.patient_summary.height}</div>
+                      <div><strong className="text-slate-900">Weight:</strong> {encounterDetails.patient_summary.weight}</div>
                     </div>
                   </div>
                 )}
 
                 {/* Allergies - CRITICAL */}
                 {encounterDetails.patient_summary?.known_allergies && encounterDetails.patient_summary.known_allergies.length > 0 && (
-                  <div className="rounded-xl border-2 border-rose-500/50 bg-rose-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-rose-200">
+                  <div className="rounded-xl border-2 border-rose-300 bg-rose-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-rose-700">
                       <ExclamationTriangleIcon className="h-5 w-5" /> ALLERGIES - CRITICAL
                     </h4>
                     <div className="space-y-2">
                       {encounterDetails.patient_summary.known_allergies.map((allergy: any, idx: number) => (
-                        <div key={idx} className="rounded-lg bg-rose-500/15 p-2 text-sm text-slate-200">
-                          <strong className="text-rose-100">{allergy.allergen || allergy.name}:</strong> {allergy.reaction}
-                          <span className="ml-2 text-rose-300">(Severity: {allergy.severity})</span>
+                        <div key={idx} className="rounded-lg bg-rose-100 p-2 text-sm text-slate-700">
+                          <strong className="text-rose-700">{allergy.allergen || allergy.name}:</strong> {allergy.reaction}
+                          <span className="ml-2 text-rose-600">(Severity: {allergy.severity})</span>
                         </div>
                       ))}
                     </div>
@@ -1127,14 +1127,14 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Current Medications */}
                 {encounterDetails.patient_summary?.current_medications && encounterDetails.patient_summary.current_medications.length > 0 && (
-                  <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-brand-200">
+                  <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-brand-700">
                       <BeakerIcon className="h-5 w-5" /> Current Medications
                     </h4>
                     <div className="space-y-2">
                       {encounterDetails.patient_summary.current_medications.map((med: any, idx: number) => (
-                        <div key={idx} className="rounded-lg bg-brand-500/15 p-2 text-sm text-slate-200">
-                          <strong className="text-white">{med.medication || med.name}:</strong> {med.dosage} ({med.frequency})
+                        <div key={idx} className="rounded-lg bg-brand-100 p-2 text-sm text-slate-700">
+                          <strong className="text-slate-900">{med.medication || med.name}:</strong> {med.dosage} ({med.frequency})
                         </div>
                       ))}
                     </div>
@@ -1143,15 +1143,15 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Chronic Conditions / Medical History */}
                 {encounterDetails.patient_summary?.chronic_conditions && encounterDetails.patient_summary.chronic_conditions.length > 0 && (
-                  <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-amber-200">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-amber-700">
                       <ClipboardDocumentListIcon className="h-5 w-5" /> Medical History / Chronic Conditions
                     </h4>
                     <div className="space-y-2">
                       {encounterDetails.patient_summary.chronic_conditions.map((condition: any, idx: number) => (
-                        <div key={idx} className="rounded-lg bg-amber-500/15 p-2 text-sm text-slate-200">
-                          <strong className="text-white">{condition.condition || condition.name}:</strong> {condition.status}
-                          <span className="ml-2 text-slate-400">(Diagnosed: {condition.diagnosed_date})</span>
+                        <div key={idx} className="rounded-lg bg-amber-100 p-2 text-sm text-slate-700">
+                          <strong className="text-slate-900">{condition.condition || condition.name}:</strong> {condition.status}
+                          <span className="ml-2 text-slate-500">(Diagnosed: {condition.diagnosed_date})</span>
                         </div>
                       ))}
                     </div>
@@ -1160,14 +1160,14 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Recent Vital Signs */}
                 {encounterDetails.patient_summary?.vital_signs_history && encounterDetails.patient_summary.vital_signs_history.length > 0 && (
-                  <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-emerald-200">
+                  <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-emerald-700">
                       <HeartIcon className="h-5 w-5" /> Recent Vital Signs
                     </h4>
                     <div className="space-y-3">
                       {encounterDetails.patient_summary.vital_signs_history.slice(-3).map((vitals: any, idx: number) => (
-                        <div key={idx} className="rounded-lg bg-emerald-500/15 p-2 text-sm text-slate-200">
-                          <div className="mb-1 font-medium text-white">Record {idx + 1} - {vitals.recorded_at}</div>
+                        <div key={idx} className="rounded-lg bg-emerald-100 p-2 text-sm text-slate-700">
+                          <div className="mb-1 font-medium text-slate-900">Record {idx + 1} - {vitals.recorded_at}</div>
                           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                             {vitals.blood_pressure_systolic && (
                               <div>BP: {vitals.blood_pressure_systolic}/{vitals.blood_pressure_diastolic}</div>
@@ -1183,27 +1183,27 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                 )}
 
                 {/* Chief Complaint & AI Report */}
-                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-white">
-                    <DocumentTextIcon className="h-5 w-5 text-slate-400" /> Chief Complaint
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+                    <DocumentTextIcon className="h-5 w-5 text-slate-500" /> Chief Complaint
                   </h4>
-                  <p className="text-sm text-slate-300">{encounterDetails.chief_complaint}</p>
+                  <p className="text-sm text-slate-600">{encounterDetails.chief_complaint}</p>
 
                   {encounterDetails.ai_preliminary_report && (
                     <div className="mt-3">
-                      <h4 className="mb-2 flex items-center gap-2 font-semibold text-white">
-                        <SparklesIcon className="h-5 w-5 text-brand-300" /> AI Preliminary Assessment
+                      <h4 className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+                        <SparklesIcon className="h-5 w-5 text-brand-700" /> AI Preliminary Assessment
                       </h4>
-                      <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 text-xs text-slate-300">{encounterDetails.ai_preliminary_report}</pre>
+                      <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">{encounterDetails.ai_preliminary_report}</pre>
                     </div>
                   )}
 
                   {encounterDetails.assessment && (
                     <div className="mt-3">
-                      <h4 className="mb-2 flex items-center gap-2 font-semibold text-white">
-                        <ClipboardDocumentListIcon className="h-5 w-5 text-slate-400" /> Clinical Assessment
+                      <h4 className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+                        <ClipboardDocumentListIcon className="h-5 w-5 text-slate-500" /> Clinical Assessment
                       </h4>
-                      <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 text-xs text-slate-300">{encounterDetails.assessment}</pre>
+                      <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">{encounterDetails.assessment}</pre>
                     </div>
                   )}
                 </div>
@@ -1265,11 +1265,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
       {/* Detailed Encounter Modal */}
       {detailedEncounter && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
           <Card className="max-h-[95vh] w-full max-w-6xl overflow-y-auto p-6 animate-fade-in-up">
             {/* Header */}
             <div className="mb-6 flex items-center justify-between">
-              <h3 className="font-display text-2xl font-bold text-white">Encounter Details</h3>
+              <h3 className="font-display text-2xl font-bold text-slate-900">Encounter Details</h3>
               <IconButton
                 label="Close"
                 onClick={() => {
@@ -1285,34 +1285,34 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
             {/* Patient Summary Section */}
             {patientInfo && (
-              <div className="mb-6 rounded-xl border border-sky-400/30 bg-sky-500/10 p-5">
-                <h4 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-sky-200">
+              <div className="mb-6 rounded-xl border border-sky-200 bg-sky-50 p-5">
+                <h4 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-sky-700">
                   <UserCircleIcon className="h-6 w-6" /> Patient Summary
                 </h4>
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Name</p>
-                    <p className="text-sm font-bold text-white">{patientInfo.name}</p>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Name</p>
+                    <p className="text-sm font-bold text-slate-900">{patientInfo.name}</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Age</p>
-                    <p className="text-sm font-bold text-white">{patientInfo.age} years</p>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Age</p>
+                    <p className="text-sm font-bold text-slate-900">{patientInfo.age} years</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Gender</p>
-                    <p className="text-sm font-bold text-white">{patientInfo.gender}</p>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Gender</p>
+                    <p className="text-sm font-bold text-slate-900">{patientInfo.gender}</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Blood Type</p>
-                    <p className="text-sm font-bold text-white">{patientEhr?.blood_type || 'Unknown'}</p>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Blood Type</p>
+                    <p className="text-sm font-bold text-slate-900">{patientEhr?.blood_type || 'Unknown'}</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Phone</p>
-                    <p className="text-sm font-bold text-white">{patientInfo.phone}</p>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Phone</p>
+                    <p className="text-sm font-bold text-slate-900">{patientInfo.phone}</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Address</p>
-                    <p className="text-sm font-bold text-white">{patientInfo.address}</p>
+                  <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Address</p>
+                    <p className="text-sm font-bold text-slate-900">{patientInfo.address}</p>
                   </div>
                 </div>
               </div>
@@ -1320,8 +1320,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
             {/* Latest Vital Signs */}
             {patientEhr && patientEhr.vital_signs && patientEhr.vital_signs.length > 0 && (
-              <div className="mb-6 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-5">
-                <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-emerald-200">
+              <div className="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+                <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-emerald-700">
                   <HeartIcon className="h-5 w-5" /> Latest Vital Signs
                 </h4>
                 {(() => {
@@ -1329,35 +1329,35 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                   return (
                     <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                       {latestVitals.blood_pressure_systolic && (
-                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">BP</p>
-                          <p className="text-sm font-bold text-white">
+                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-400">BP</p>
+                          <p className="text-sm font-bold text-slate-900">
                             {latestVitals.blood_pressure_systolic}/{latestVitals.blood_pressure_diastolic}
                           </p>
                         </div>
                       )}
                       {latestVitals.heart_rate && (
-                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">HR</p>
-                          <p className="text-sm font-bold text-white">{latestVitals.heart_rate} bpm</p>
+                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-400">HR</p>
+                          <p className="text-sm font-bold text-slate-900">{latestVitals.heart_rate} bpm</p>
                         </div>
                       )}
                       {latestVitals.temperature && (
-                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Temp</p>
-                          <p className="text-sm font-bold text-white">{latestVitals.temperature}&deg;F</p>
+                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Temp</p>
+                          <p className="text-sm font-bold text-slate-900">{latestVitals.temperature}&deg;F</p>
                         </div>
                       )}
                       {latestVitals.weight && (
-                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Weight</p>
-                          <p className="text-sm font-bold text-white">{latestVitals.weight} kg</p>
+                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Weight</p>
+                          <p className="text-sm font-bold text-slate-900">{latestVitals.weight} kg</p>
                         </div>
                       )}
                       {patientEhr.height && (
-                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
-                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Height</p>
-                          <p className="text-sm font-bold text-white">{patientEhr.height}</p>
+                        <div className="rounded-lg border border-slate-200 bg-white p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-400">Height</p>
+                          <p className="text-sm font-bold text-slate-900">{patientEhr.height}</p>
                         </div>
                       )}
                     </div>
@@ -1372,14 +1372,14 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Current Medications */}
                 {patientEhr.medications && patientEhr.medications.length > 0 && (
-                  <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-brand-200">
+                  <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-brand-700">
                       <BeakerIcon className="h-5 w-5" /> Current Medications
                     </h4>
                     <div className="space-y-2">
                       {patientEhr.medications.map((med: any, idx: number) => (
-                        <div key={idx} className="rounded-lg bg-brand-500/15 p-2 text-sm text-slate-200">
-                          <strong className="text-white">{med.medication || med.name || 'Unknown'}:</strong>{' '}
+                        <div key={idx} className="rounded-lg bg-brand-100 p-2 text-sm text-slate-700">
+                          <strong className="text-slate-900">{med.medication || med.name || 'Unknown'}:</strong>{' '}
                           {med.dosage || 'N/A'} ({med.frequency || 'N/A'})
                         </div>
                       ))}
@@ -1389,17 +1389,17 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* ALLERGIES - CRITICAL */}
                 {patientEhr.allergies && patientEhr.allergies.length > 0 && (
-                  <div className="rounded-xl border-2 border-rose-500/50 bg-rose-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-rose-200">
+                  <div className="rounded-xl border-2 border-rose-300 bg-rose-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-rose-700">
                       <ExclamationTriangleIcon className="h-5 w-5" /> ALLERGIES - CRITICAL
                     </h4>
                     <div className="space-y-2">
                       {patientEhr.allergies.map((allergy: any, idx: number) => (
-                        <div key={idx} className="rounded-lg border border-rose-400/30 bg-rose-500/15 p-3 text-sm text-slate-200">
-                          <strong className="text-rose-100">{allergy.allergen || allergy.name || 'Unknown'}:</strong>{' '}
-                          <span className="text-rose-200">{allergy.reaction || 'N/A'}</span>
+                        <div key={idx} className="rounded-lg border border-rose-200 bg-rose-100 p-3 text-sm text-slate-700">
+                          <strong className="text-rose-700">{allergy.allergen || allergy.name || 'Unknown'}:</strong>{' '}
+                          <span className="text-rose-700">{allergy.reaction || 'N/A'}</span>
                           {allergy.severity && (
-                            <span className="ml-2 rounded bg-rose-500/30 px-2 py-0.5 text-xs font-bold text-rose-100">
+                            <span className="ml-2 rounded bg-rose-200 px-2 py-0.5 text-xs font-bold text-rose-700">
                               Severity: {allergy.severity}
                             </span>
                           )}
@@ -1411,17 +1411,17 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Chronic Conditions / Medical History */}
                 {patientEhr.chronic_conditions && patientEhr.chronic_conditions.length > 0 && (
-                  <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
-                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-amber-200">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-amber-700">
                       <ClipboardDocumentListIcon className="h-5 w-5" /> Medical History / Chronic Conditions
                     </h4>
                     <div className="space-y-2">
                       {patientEhr.chronic_conditions.map((condition: any, idx: number) => (
-                        <div key={idx} className="rounded-lg bg-amber-500/15 p-2 text-sm text-slate-200">
-                          <strong className="text-white">{condition.condition || condition.name || 'Unknown'}:</strong>{' '}
+                        <div key={idx} className="rounded-lg bg-amber-100 p-2 text-sm text-slate-700">
+                          <strong className="text-slate-900">{condition.condition || condition.name || 'Unknown'}:</strong>{' '}
                           {condition.status || 'Active'}
                           {condition.diagnosed_date && (
-                            <span className="ml-2 text-slate-400">(Diagnosed: {condition.diagnosed_date})</span>
+                            <span className="ml-2 text-slate-500">(Diagnosed: {condition.diagnosed_date})</span>
                           )}
                         </div>
                       ))}
@@ -1432,22 +1432,22 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
             )}
 
             {/* Current Encounter Details */}
-            <div className="mb-6 space-y-4 border-t border-brand-400/40 pt-6">
-              <h3 className="mb-4 flex items-center gap-2 font-display text-xl font-bold text-white">
-                <DocumentTextIcon className="h-6 w-6 text-brand-300" /> Current Encounter
+            <div className="mb-6 space-y-4 border-t border-brand-200 pt-6">
+              <h3 className="mb-4 flex items-center gap-2 font-display text-xl font-bold text-slate-900">
+                <DocumentTextIcon className="h-6 w-6 text-brand-700" /> Current Encounter
               </h3>
 
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="mb-2 flex items-start justify-between gap-3">
                   <div>
-                    <h4 className="font-display text-lg font-semibold text-white">Chief Complaint</h4>
-                    <p className="mt-1 text-slate-300">{detailedEncounter.chief_complaint}</p>
+                    <h4 className="font-display text-lg font-semibold text-slate-900">Chief Complaint</h4>
+                    <p className="mt-1 text-slate-600">{detailedEncounter.chief_complaint}</p>
                   </div>
                   <Badge tone={severityTone(detailedEncounter.severity)}>
                     {detailedEncounter.severity?.toUpperCase()}
                   </Badge>
                 </div>
-                <p className="text-sm text-slate-400">
+                <p className="text-sm text-slate-500">
                   {new Date(detailedEncounter.encounter_date).toLocaleString('en-US', {
                     year: 'numeric',
                     month: 'long',
@@ -1460,13 +1460,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Symptoms */}
               {detailedEncounter.symptoms && detailedEncounter.symptoms.length > 0 && (
-                <div className="rounded-xl border border-accent-400/30 bg-accent-500/10 p-4">
-                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-accent-200">
+                <div className="rounded-xl border border-accent-200 bg-accent-50 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-accent-700">
                     <HeartIcon className="h-5 w-5" /> Symptoms
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {detailedEncounter.symptoms.map((symptom: any, idx: number) => (
-                      <span key={idx} className="rounded-full bg-accent-500/20 px-3 py-1 text-sm font-medium text-accent-100">
+                      <span key={idx} className="rounded-full bg-accent-100 px-3 py-1 text-sm font-medium text-accent-700">
                         {typeof symptom === 'string' ? symptom : symptom.symptom || symptom.name || JSON.stringify(symptom)}
                       </span>
                     ))}
@@ -1476,39 +1476,39 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Encounter Vital Signs */}
               {detailedEncounter.vital_signs && Object.keys(detailedEncounter.vital_signs).length > 0 && (
-                <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
-                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-amber-200">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-amber-700">
                     <HeartIcon className="h-5 w-5" /> Encounter Vital Signs
                   </h4>
-                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-200 md:grid-cols-4">
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-700 md:grid-cols-4">
                     {detailedEncounter.vital_signs.blood_pressure_systolic && (
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
-                        <span className="font-semibold text-white">BP:</span> {detailedEncounter.vital_signs.blood_pressure_systolic}/{detailedEncounter.vital_signs.blood_pressure_diastolic} mmHg
+                      <div className="rounded-lg border border-slate-200 bg-white p-2">
+                        <span className="font-semibold text-slate-900">BP:</span> {detailedEncounter.vital_signs.blood_pressure_systolic}/{detailedEncounter.vital_signs.blood_pressure_diastolic} mmHg
                       </div>
                     )}
                     {detailedEncounter.vital_signs.heart_rate && (
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
-                        <span className="font-semibold text-white">Heart Rate:</span> {detailedEncounter.vital_signs.heart_rate} bpm
+                      <div className="rounded-lg border border-slate-200 bg-white p-2">
+                        <span className="font-semibold text-slate-900">Heart Rate:</span> {detailedEncounter.vital_signs.heart_rate} bpm
                       </div>
                     )}
                     {detailedEncounter.vital_signs.temperature && (
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
-                        <span className="font-semibold text-white">Temperature:</span> {detailedEncounter.vital_signs.temperature}&deg;F
+                      <div className="rounded-lg border border-slate-200 bg-white p-2">
+                        <span className="font-semibold text-slate-900">Temperature:</span> {detailedEncounter.vital_signs.temperature}&deg;F
                       </div>
                     )}
                     {detailedEncounter.vital_signs.respiratory_rate && (
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
-                        <span className="font-semibold text-white">Respiratory:</span> {detailedEncounter.vital_signs.respiratory_rate} /min
+                      <div className="rounded-lg border border-slate-200 bg-white p-2">
+                        <span className="font-semibold text-slate-900">Respiratory:</span> {detailedEncounter.vital_signs.respiratory_rate} /min
                       </div>
                     )}
                     {detailedEncounter.vital_signs.oxygen_saturation && (
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
-                        <span className="font-semibold text-white">SpO2:</span> {detailedEncounter.vital_signs.oxygen_saturation}%
+                      <div className="rounded-lg border border-slate-200 bg-white p-2">
+                        <span className="font-semibold text-slate-900">SpO2:</span> {detailedEncounter.vital_signs.oxygen_saturation}%
                       </div>
                     )}
                     {detailedEncounter.vital_signs.weight && (
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
-                        <span className="font-semibold text-white">Weight:</span> {detailedEncounter.vital_signs.weight} kg
+                      <div className="rounded-lg border border-slate-200 bg-white p-2">
+                        <span className="font-semibold text-slate-900">Weight:</span> {detailedEncounter.vital_signs.weight} kg
                       </div>
                     )}
                   </div>
@@ -1517,11 +1517,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* AI Preliminary Report */}
               {detailedEncounter.ai_preliminary_report && (
-                <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-4">
-                  <h4 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-sky-200">
+                <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-sky-700">
                     <SparklesIcon className="h-5 w-5" /> AI Preliminary Assessment
                   </h4>
-                  <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 font-sans text-sm text-slate-300">
+                  <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 font-sans text-sm text-slate-600">
                     {detailedEncounter.ai_preliminary_report}
                   </pre>
                 </div>
@@ -1529,11 +1529,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Assessment */}
               {detailedEncounter.assessment && (
-                <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
-                  <h4 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-brand-200">
+                <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-brand-700">
                     <ClipboardDocumentListIcon className="h-5 w-5" /> Clinical Assessment
                   </h4>
-                  <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 font-sans text-sm text-slate-300">
+                  <pre className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 font-sans text-sm text-slate-600">
                     {detailedEncounter.assessment}
                   </pre>
                 </div>
@@ -1541,8 +1541,8 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Recommended Specialization */}
               {detailedEncounter.recommended_specialization && (
-                <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
-                  <h4 className="mb-2 font-semibold text-brand-200">Recommended Specialization</h4>
+                <div className="rounded-xl border border-brand-200 bg-brand-50 p-4">
+                  <h4 className="mb-2 font-semibold text-brand-700">Recommended Specialization</h4>
                   <Badge tone="brand">
                     {detailedEncounter.recommended_specialization.replace('_', ' ').toUpperCase()}
                   </Badge>
@@ -1551,31 +1551,31 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
             </div>
 
             {/* Doctor's Note Section */}
-            <div className="border-t border-brand-400/40 pt-6">
-              <h4 className="mb-3 flex items-center gap-2 font-display text-xl font-bold text-white">
-                <PencilSquareIcon className="h-6 w-6 text-brand-300" /> Doctor's Note
+            <div className="border-t border-brand-200 pt-6">
+              <h4 className="mb-3 flex items-center gap-2 font-display text-xl font-bold text-slate-900">
+                <PencilSquareIcon className="h-6 w-6 text-brand-700" /> Doctor's Note
               </h4>
 
               {/* Show existing diagnosis and treatment plan if available */}
               {(detailedEncounter.diagnosis || detailedEncounter.treatment_plan || detailedEncounter.doctor_notes) && (
-                <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
-                  <h5 className="mb-2 font-semibold text-slate-300">Previous Documentation:</h5>
+                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <h5 className="mb-2 font-semibold text-slate-600">Previous Documentation:</h5>
                   {detailedEncounter.diagnosis && (
                     <div className="mb-2">
-                      <span className="font-semibold text-slate-200">Diagnosis:</span>
-                      <p className="mt-1 text-slate-300">{detailedEncounter.diagnosis}</p>
+                      <span className="font-semibold text-slate-700">Diagnosis:</span>
+                      <p className="mt-1 text-slate-600">{detailedEncounter.diagnosis}</p>
                     </div>
                   )}
                   {detailedEncounter.treatment_plan && (
                     <div className="mb-2">
-                      <span className="font-semibold text-slate-200">Treatment Plan:</span>
-                      <p className="mt-1 text-slate-300">{detailedEncounter.treatment_plan}</p>
+                      <span className="font-semibold text-slate-700">Treatment Plan:</span>
+                      <p className="mt-1 text-slate-600">{detailedEncounter.treatment_plan}</p>
                     </div>
                   )}
                   {detailedEncounter.doctor_notes && (
                     <div className="mb-2">
-                      <span className="font-semibold text-slate-200">Doctor's Notes:</span>
-                      <p className="mt-1 text-slate-300">{detailedEncounter.doctor_notes}</p>
+                      <span className="font-semibold text-slate-700">Doctor's Notes:</span>
+                      <p className="mt-1 text-slate-600">{detailedEncounter.doctor_notes}</p>
                     </div>
                   )}
                 </div>

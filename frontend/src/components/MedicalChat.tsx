@@ -9,7 +9,7 @@ import {
   ShieldCheckIcon,
   ChatBubbleLeftRightIcon,
 } from '@heroicons/react/24/outline';
-import { Button, IconButton, Badge, Avatar, Spinner, cn } from '../lib/ui';
+import { Button, IconButton, Badge, Avatar, Spinner, ChatMarkdown, cn } from '../lib/ui';
 import AppLayout from './layout/AppLayout';
 
 interface MedicalChatProps {
@@ -207,8 +207,8 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
           className={cn(
             'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition',
             voiceEnabled
-              ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25'
-              : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20 hover:bg-white/10'
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+              : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
           )}
         >
           {voiceEnabled ? (
@@ -227,14 +227,14 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
     >
       <div className="flex min-h-0 flex-1 flex-col animate-fade-in-up">
         {/* Intro / context bar */}
-        <div className="border-b border-white/10 bg-ink-900/40 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10">
+        <div className="border-b border-slate-200 bg-white px-4 py-4 sm:px-6 lg:px-10">
           <div className="mx-auto flex w-full max-w-4xl items-center gap-4">
             <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand text-white shadow-glow-sm">
               <SparklesIcon className="h-6 w-6" />
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-display text-lg font-bold text-white">AI Medical Assistant</h2>
+                <h2 className="font-display text-lg font-bold text-slate-900">AI Medical Assistant</h2>
                 <Badge tone="brand">
                   <SparklesIcon className="h-3 w-3" />
                   Powered by MeroDaktar
@@ -246,7 +246,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
                   </Badge>
                 )}
               </div>
-              <p className="mt-0.5 truncate text-sm text-slate-400">
+              <p className="mt-0.5 truncate text-sm text-slate-500">
                 Describe your symptoms for preliminary guidance, {user?.full_name || 'there'}.
               </p>
             </div>
@@ -263,7 +263,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
 
         {/* Chat surface */}
         <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-10">
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-glass backdrop-blur-xl">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-card">
             {/* Messages */}
             <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
               {messages.map((message) => {
@@ -283,10 +283,14 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
                         'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm',
                         isUser
                           ? 'rounded-br-md bg-gradient-brand text-white'
-                          : 'rounded-bl-md border border-white/10 bg-white/[0.05] text-slate-100'
+                          : 'rounded-bl-md border border-slate-200 bg-white text-slate-700'
                       )}
                     >
-                      <p className="whitespace-pre-wrap">{message.text}</p>
+                      {isUser ? (
+                        <p className="whitespace-pre-wrap">{message.text}</p>
+                      ) : (
+                        <ChatMarkdown>{message.text}</ChatMarkdown>
+                      )}
                       {message.urgency && (
                         <p
                           className={cn(
@@ -294,16 +298,16 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
                             isUser
                               ? 'text-white/80'
                               : message.urgency === 'emergency'
-                                ? 'text-rose-300'
+                                ? 'text-rose-600'
                                 : message.urgency === 'moderate'
-                                  ? 'text-amber-300'
-                                  : 'text-emerald-300'
+                                  ? 'text-amber-600'
+                                  : 'text-emerald-600'
                           )}
                         >
                           Urgency Level: {message.urgency.toUpperCase()}
                         </p>
                       )}
-                      <p className={cn('mt-1.5 text-[11px]', isUser ? 'text-white/70' : 'text-slate-500')}>
+                      <p className={cn('mt-1.5 text-[11px]', isUser ? 'text-white/70' : 'text-slate-400')}>
                         {message.timestamp.toLocaleTimeString()}
                       </p>
                     </div>
@@ -318,15 +322,15 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
                   <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow-sm">
                     <SparklesIcon className="h-5 w-5" />
                   </span>
-                  <div className="rounded-2xl rounded-bl-md border border-white/10 bg-white/[0.05] px-4 py-3.5">
+                  <div className="rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3.5">
                     <div className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 animate-bounce rounded-full bg-brand-300" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-brand-400" />
                       <span
-                        className="h-2 w-2 animate-bounce rounded-full bg-brand-300"
+                        className="h-2 w-2 animate-bounce rounded-full bg-brand-400"
                         style={{ animationDelay: '0.15s' }}
                       />
                       <span
-                        className="h-2 w-2 animate-bounce rounded-full bg-brand-300"
+                        className="h-2 w-2 animate-bounce rounded-full bg-brand-400"
                         style={{ animationDelay: '0.3s' }}
                       />
                     </div>
@@ -337,7 +341,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
             </div>
 
             {/* Input Area */}
-            <div className="border-t border-white/10 bg-ink-900/40 p-4 backdrop-blur-xl">
+            <div className="border-t border-slate-200 bg-slate-50 p-4">
               <div className="flex items-center gap-2">
                 <IconButton
                   label="Voice input (coming soon)"
@@ -347,14 +351,14 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
                   <MicrophoneIcon className="h-5 w-5" />
                 </IconButton>
                 <div className="relative flex-1">
-                  <ChatBubbleLeftRightIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <ChatBubbleLeftRightIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                   <input
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="Describe your symptoms..."
-                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-slate-100 transition placeholder:text-slate-500 focus:border-brand-400/60 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
+                    className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-11 pr-4 text-slate-900 transition placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
                     disabled={isLoading}
                   />
                 </div>
@@ -383,10 +387,10 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
                   )}
                 </Button>
               </div>
-              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
-                <ShieldCheckIcon className="h-4 w-4 shrink-0 text-slate-500" />
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-400">
+                <ShieldCheckIcon className="h-4 w-4 shrink-0 text-slate-400" />
                 {voiceEnabled && (
-                  <span className="font-medium text-emerald-300">
+                  <span className="font-medium text-emerald-600">
                     Voice mode enabled - AI responses will be spoken.{' '}
                   </span>
                 )}
