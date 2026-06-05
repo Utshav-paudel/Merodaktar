@@ -21,6 +21,10 @@
 
 </div>
 
+<div align="center">
+  <img src="docs/screenshots/01-patient-login.png" alt="MeroDaktar — AI telemedicine sign-in" width="920" />
+</div>
+
 ---
 
 ## ✦ What is MeroDaktar?
@@ -63,7 +67,22 @@ It is not a chatbot demo. It is a layered, tested, production-shaped system: **6
 
 ## ✦ Demo — the patient journey
 
-> 🎥 *Drop a screen-recording or screenshots into `docs/` and reference them here. The flows below are live in the app today.*
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/04-patient-dashboard.png" alt="Patient dashboard" /><br/><sub><b>🏠 Patient dashboard</b> — health hub with quick actions, recent consultations & upcoming visits</sub></td>
+    <td width="50%"><img src="docs/screenshots/05-ai-consultation.png" alt="AI consultation" /><br/><sub><b>💬 AI consultation</b> — voice + text symptom triage with conversation history</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/06-appointments.png" alt="Appointments" /><br/><sub><b>📅 Appointments</b> — browse doctors, pick a slot, book & manage</sub></td>
+    <td><img src="docs/screenshots/07-health-records.png" alt="Health records (EHR)" /><br/><sub><b>📋 Health records (EHR)</b> — vitals, allergies, medications & encounter timeline</sub></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/08-doctor-dashboard.png" alt="Doctor portal" /><br/><sub><b>🩺 Doctor portal</b> — overview, appointments, patients & schedule management</sub></td>
+    <td><img src="docs/screenshots/03-doctor-login.png" alt="Doctor sign-in" /><br/><sub><b>🔐 Separate doctor portal</b> — dedicated, JWT-secured sign-in</sub></td>
+  </tr>
+</table>
+
+> The flows below are live in the app today.
 
 ```
   Sign up / Log in ─▶ Dashboard ─▶ "AI Consultation"
