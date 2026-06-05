@@ -56,8 +56,11 @@ async def get_my_appointments(
     status_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     appointment_service: AppointmentService = Depends(get_appointment_service),
+    db: Session = Depends(get_db),
 ):
-    """Get current user's appointments"""
+    """Get current user's appointments (enriched with the doctor's name)"""
+    from repositories.doctor import DoctorRepository
+
     appointments = appointment_service.get_patient_appointments(
         current_user.id, skip, limit
     )
@@ -67,7 +70,15 @@ async def get_my_appointments(
             apt for apt in appointments if apt.status == status_filter
         ]
 
-    return appointments
+    doctor_repo = DoctorRepository(db)
+    enriched = []
+    for apt in appointments:
+        apt_dict = apt.__dict__.copy()
+        doctor = doctor_repo.get(apt.doctor_id)
+        apt_dict["doctor_name"] = doctor.full_name if doctor else None
+        enriched.append(AppointmentResponse(**apt_dict))
+
+    return enriched
 
 
 @router.get("/doctor/appointments", response_model=List[AppointmentResponse])

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List, Dict
 from datetime import datetime
 
@@ -39,6 +39,16 @@ class EHRResponse(BaseModel):
     lab_results: List[Dict] = []
     created_at: datetime
     last_updated: datetime
+
+    @field_validator(
+        "chronic_conditions", "allergies", "medications",
+        "immunizations", "vital_signs", "lab_results",
+        mode="before",
+    )
+    @classmethod
+    def _none_to_list(cls, v):
+        """Coerce NULL list columns to [] so the API always returns arrays."""
+        return v if v is not None else []
 
     class Config:
         from_attributes = True

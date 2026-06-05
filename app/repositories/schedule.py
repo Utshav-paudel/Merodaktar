@@ -109,10 +109,13 @@ class TimeSlotRepository(BaseRepository[TimeSlot]):
         self, doctor_id: str, start_date: str, end_date: str
     ) -> None:
         """Delete time slots in a date range"""
+        # TimeSlot.date is stored as an ISO 'YYYY-MM-DD' string; compare as
+        # strings (lexicographic == chronological) so Postgres doesn't try to
+        # compare varchar against a DATE param.
         self.db.query(TimeSlot).filter(
             TimeSlot.doctor_id == doctor_id,
-            TimeSlot.date >= start_date,
-            TimeSlot.date <= end_date
+            TimeSlot.date >= str(start_date),
+            TimeSlot.date <= str(end_date)
         ).delete()
         self.db.commit()
     
