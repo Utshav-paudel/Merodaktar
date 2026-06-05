@@ -40,7 +40,7 @@ class EHRService:
     def add_medication(self, patient_id: str, medication: Dict):
         """Add medication to patient's record"""
         ehr = self.get_or_create_ehr(patient_id)
-        medications = ehr.medications or []
+        medications = list(ehr.medications or [])  # copy so SQLAlchemy detects the change
         medication["added_at"] = datetime.utcnow().isoformat()
         medications.append(medication)
         return self.ehr_repo.update(ehr.id, {"medications": medications})
@@ -48,7 +48,7 @@ class EHRService:
     def add_allergy(self, patient_id: str, allergy: Dict):
         """Add allergy to patient's record"""
         ehr = self.get_or_create_ehr(patient_id)
-        allergies = ehr.allergies or []
+        allergies = list(ehr.allergies or [])  # copy so SQLAlchemy detects the change
         allergy["recorded_at"] = datetime.utcnow().isoformat()
         allergies.append(allergy)
         return self.ehr_repo.update(ehr.id, {"allergies": allergies})
@@ -56,6 +56,6 @@ class EHRService:
     def add_immunization(self, patient_id: str, immunization: Dict):
         """Add immunization record"""
         ehr = self.get_or_create_ehr(patient_id)
-        immunizations = ehr.immunizations or []
+        immunizations = list(ehr.immunizations or [])  # copy so SQLAlchemy detects the change
         immunizations.append(immunization)
         return self.ehr_repo.update(ehr.id, {"immunizations": immunizations})

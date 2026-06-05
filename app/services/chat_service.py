@@ -424,7 +424,7 @@ FORMATTING: Use clean, simple markdown — short paragraphs, **bold** for key po
             messages.append({"role": "user", "content": user_message})
 
             # Generate via the configured AI backend (Gemini / OpenAI)
-            return generate_chat(messages, temperature=0.7, max_tokens=500)
+            return generate_chat(messages, temperature=0.7, max_tokens=1100)
 
         except Exception as e:
             return f"I apologize, but I'm having trouble processing your request right now. Please try again or consult with a healthcare professional. Error: {str(e)}"

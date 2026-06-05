@@ -25,7 +25,7 @@ class EHRRepository(BaseRepository[EHR]):
         """Add vital sign record"""
         ehr = self.get_by_patient(patient_id)
         if ehr:
-            vital_signs = ehr.vital_signs or []
+            vital_signs = list(ehr.vital_signs or [])  # copy so SQLAlchemy detects the change
             vital_signs.append(vital_data)
             return self.update(ehr.id, {"vital_signs": vital_signs})
         return None
@@ -34,7 +34,7 @@ class EHRRepository(BaseRepository[EHR]):
         """Add lab result"""
         ehr = self.get_by_patient(patient_id)
         if ehr:
-            lab_results = ehr.lab_results or []
+            lab_results = list(ehr.lab_results or [])  # copy so SQLAlchemy detects the change
             lab_results.append(lab_data)
             return self.update(ehr.id, {"lab_results": lab_results})
         return None
