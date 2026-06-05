@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
-import MedicalChat from './components/MedicalChat';
 import MedicalChatWithHistory from './components/MedicalChatWithHistory';
 import Appointments from './components/Appointments';
 import DoctorLogin from './components/DoctorLogin';
@@ -64,7 +63,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-ink-950 text-slate-200">
         <Routes>
           {/* Patient Routes */}
           <Route 

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeftIcon, 
-  PaperAirplaneIcon, 
-  SpeakerWaveIcon, 
+import {
+  ArrowLeftIcon,
+  PaperAirplaneIcon,
+  SpeakerWaveIcon,
   SpeakerXMarkIcon,
   ChatBubbleLeftRightIcon,
   PlusIcon,
@@ -11,8 +11,12 @@ import {
   Bars3Icon,
   XMarkIcon,
   ClipboardDocumentListIcon,
-  MicrophoneIcon
+  MicrophoneIcon,
+  SparklesIcon,
+  StopIcon,
 } from '@heroicons/react/24/outline';
+import { Button, IconButton, Badge, Spinner, Avatar, EmptyState, cn } from '../lib/ui';
+import AppLayout from './layout/AppLayout';
 
 interface MedicalChatProps {
   token: string;
@@ -48,20 +52,18 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  
+
   // Symptom Interview Mode
   const [symptomInterviewMode, setSymptomInterviewMode] = useState(false);
   const [reportId, setReportId] = useState<string>('');
-  const [currentQuestion, setCurrentQuestion] = useState<string>('');
   const [questionNumber, setQuestionNumber] = useState<number>(0);
-  const [interviewComplete, setInterviewComplete] = useState(false);
-  
+
   // Voice Recording
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const streamRef = useRef<MediaStream | null>(null);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -114,7 +116,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           sender: 'ai',
           timestamp: new Date()
         }]);
-        
+
         // Reload conversations
         await loadConversations();
       }
@@ -157,7 +159,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
 
   const deleteConversation = async (session_id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    
+
     if (!confirm('Are you sure you want to delete this conversation?')) {
       return;
     }
@@ -176,7 +178,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
       if (response.ok) {
         // Reload conversations
         await loadConversations();
-        
+
         // If deleted conversation was active, clear messages
         if (session_id === sessionId) {
           setMessages([]);
@@ -190,17 +192,17 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
 
   const speakText = (text: string) => {
     if (!voiceEnabled) return;
-    
+
     window.speechSynthesis.cancel();
     setIsSpeaking(true);
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 1;
     utterance.volume = 1;
-    
+
     utterance.onend = () => setIsSpeaking(false);
     utterance.onerror = () => setIsSpeaking(false);
-    
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -223,7 +225,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
     const bitDepth = 16;
     const bytesPerSample = bitDepth / 8;
     const blockAlign = numberOfChannels * bytesPerSample;
-    
+
     const data = new Float32Array(audioBuffer.length * numberOfChannels);
     for (let channel = 0; channel < numberOfChannels; channel++) {
       const channelData = audioBuffer.getChannelData(channel);
@@ -231,18 +233,18 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
         data[i * numberOfChannels + channel] = channelData[i];
       }
     }
-    
+
     const dataLength = data.length * bytesPerSample;
     const buffer = new ArrayBuffer(44 + dataLength);
     const view = new DataView(buffer);
-    
+
     // Write WAV header
     const writeString = (offset: number, string: string) => {
       for (let i = 0; i < string.length; i++) {
         view.setUint8(offset + i, string.charCodeAt(i));
       }
     };
-    
+
     writeString(0, 'RIFF');
     view.setUint32(4, 36 + dataLength, true);
     writeString(8, 'WAVE');
@@ -256,7 +258,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
     view.setUint16(34, bitDepth, true);
     writeString(36, 'data');
     view.setUint32(40, dataLength, true);
-    
+
     // Write audio data
     const volume = 0.8;
     let offset = 44;
@@ -265,7 +267,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
       view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF * volume, true);
       offset += 2;
     }
-    
+
     return buffer;
   };
 
@@ -273,7 +275,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
     return new Promise((resolve, reject) => {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const fileReader = new FileReader();
-      
+
       fileReader.onload = async (e) => {
         try {
           const arrayBuffer = e.target?.result as ArrayBuffer;
@@ -285,7 +287,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           reject(error);
         }
       };
-      
+
       fileReader.onerror = () => reject(new Error('Failed to read audio file'));
       fileReader.readAsArrayBuffer(webmBlob);
     });
@@ -299,38 +301,38 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
       setIsRecording(false);
       return;
     }
-    
+
     try {
       // Start recording
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      
+
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-      
+
       mediaRecorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
           audioChunksRef.current.push(event.data);
         }
       };
-      
+
       mediaRecorder.onstop = async () => {
-        const webmBlob = new Blob(audioChunksRef.current, { 
+        const webmBlob = new Blob(audioChunksRef.current, {
           type: 'audio/webm;codecs=opus'
         });
-        
+
         try {
           setIsLoading(true);
-          
+
           // Convert WebM to WAV
           console.log('Converting WebM to WAV...');
           const wavBlob = await convertWebMToWav(webmBlob);
           console.log('Conversion complete. WAV size:', wavBlob.size);
-          
+
           const formData = new FormData();
           formData.append('audio', wavBlob, 'recording.wav');
-          
+
           // Send to ASR endpoint
           const asrResponse = await fetch('http://localhost:8000/api/v1/speech/transcribe', {
             method: 'POST',
@@ -339,18 +341,18 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
             },
             body: formData
           });
-          
+
           if (!asrResponse.ok) {
             const errorData = await asrResponse.json().catch(() => ({ detail: 'ASR service failed' }));
             throw new Error(errorData.detail || 'ASR service failed');
           }
-          
+
           const asrData = await asrResponse.json();
           const transcript = asrData.transcription || "Couldn't transcribe audio.";
-          
+
           // Set the transcription in the input field
           setInputMessage(transcript);
-          
+
         } catch (error) {
           console.error('Voice input error:', error);
           const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -364,7 +366,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           }
         }
       };
-      
+
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
@@ -388,10 +390,9 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
       if (response.ok) {
         const data = await response.json();
         setReportId(data.report_id);
-        setCurrentQuestion(data.question);
         setQuestionNumber(data.question_number);
         setSymptomInterviewMode(true);
-        
+
         // Add question as AI message
         const aiMessage: Message = {
           id: Date.now().toString(),
@@ -400,7 +401,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           timestamp: new Date()
         };
         setMessages([aiMessage]);
-        
+
         if (voiceEnabled) {
           speakText(data.question);
         }
@@ -447,7 +448,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
 
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.is_complete) {
           const aiMessage: Message = {
             id: (Date.now() + 1).toString(),
@@ -457,8 +458,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           };
           setMessages(prev => [...prev, aiMessage]);
           setSymptomInterviewMode(false);
-          setInterviewComplete(true);
-          
+
           if (voiceEnabled) {
             speakText('Assessment complete. Your report has been generated.');
           }
@@ -470,9 +470,8 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
             timestamp: new Date()
           };
           setMessages(prev => [...prev, aiMessage]);
-          setCurrentQuestion(data.question);
           setQuestionNumber(data.question_number);
-          
+
           if (voiceEnabled) {
             speakText(data.question);
           }
@@ -495,9 +494,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
   const exitSymptomInterview = () => {
     setSymptomInterviewMode(false);
     setReportId('');
-    setCurrentQuestion('');
     setQuestionNumber(0);
-    setInterviewComplete(false);
     setMessages([]);
   };
 
@@ -537,7 +534,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify({ 
+          body: JSON.stringify({
             message: inputMessage,
             sender: 'user'
           })
@@ -546,7 +543,7 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
 
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.ai_response) {
           const aiMessage: Message = {
             id: data.ai_response.id,
@@ -556,12 +553,12 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
           };
 
           setMessages(prev => [...prev, aiMessage]);
-          
+
           if (voiceEnabled) {
             speakText(aiMessage.text);
           }
         }
-        
+
         // Reload conversations to update message count
         await loadConversations();
       } else if (response.status === 401) {
@@ -603,286 +600,343 @@ const MedicalChatWithHistory: React.FC<MedicalChatProps> = ({ token, user, onLog
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex overflow-hidden">
-      {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'w-72' : 'w-0'} transition-all duration-300 bg-white border-r border-gray-200 shadow-lg flex flex-col`}>
-        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-blue-500 to-indigo-600 flex-shrink-0">
-          <button
-            onClick={createNewChat}
-            className="w-full flex items-center justify-center space-x-2 bg-white text-blue-600 hover:bg-blue-50 px-4 py-3 rounded-lg font-semibold transition shadow-sm"
+    <AppLayout
+      role="patient"
+      user={user}
+      onLogout={onLogout}
+      title="AI Consultation"
+      fullBleed
+      actions={
+        <>
+          {!symptomInterviewMode ? (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={startSymptomInterview}
+              leftIcon={<ClipboardDocumentListIcon className="h-4 w-4" />}
+            >
+              <span className="hidden sm:inline">Symptom Assessment</span>
+              <span className="sm:hidden">Assess</span>
+            </Button>
+          ) : (
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={exitSymptomInterview}
+              leftIcon={<XMarkIcon className="h-4 w-4" />}
+            >
+              Exit Assessment
+            </Button>
+          )}
+          <IconButton
+            label={voiceEnabled ? 'Voice on' : 'Voice off'}
+            onClick={toggleVoice}
+            className={cn(
+              voiceEnabled
+                ? 'bg-emerald-500/15 text-emerald-200 ring-1 ring-inset ring-emerald-400/30 hover:bg-emerald-500/25'
+                : ''
+            )}
           >
-            <PlusIcon className="h-5 w-5" />
-            <span>New Conversation</span>
-          </button>
-        </div>
+            {voiceEnabled ? (
+              <SpeakerWaveIcon className="h-5 w-5" />
+            ) : (
+              <SpeakerXMarkIcon className="h-5 w-5" />
+            )}
+          </IconButton>
+        </>
+      }
+    >
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* History sidebar */}
+        <aside
+          className={cn(
+            'flex min-h-0 flex-col border-r border-white/10 bg-ink-900/40 backdrop-blur-xl transition-all duration-300',
+            sidebarOpen ? 'w-72' : 'w-0 overflow-hidden border-r-0'
+          )}
+        >
+          <div className="flex-shrink-0 border-b border-white/10 p-3">
+            <Button
+              variant="primary"
+              fullWidth
+              onClick={createNewChat}
+              leftIcon={<PlusIcon className="h-5 w-5" />}
+            >
+              New Conversation
+            </Button>
+          </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-          {conversations.length === 0 ? (
-            <div className="text-center py-8 px-4">
-              <ChatBubbleLeftRightIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-gray-500 text-sm">No conversations yet</p>
-              <p className="text-gray-400 text-xs mt-1">Start a new chat to begin</p>
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+            {conversations.length === 0 ? (
+              <div className="px-3 py-10 text-center">
+                <span className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-brand-300">
+                  <ChatBubbleLeftRightIcon className="h-6 w-6" />
+                </span>
+                <p className="text-sm font-medium text-slate-300">No conversations yet</p>
+                <p className="mt-1 text-xs text-slate-500">Start a new chat to begin</p>
+              </div>
+            ) : (
+              conversations.map((conv) => {
+                const active = conv.session_id === sessionId;
+                return (
+                  <div
+                    key={conv.id}
+                    onClick={() => loadConversation(conv.session_id)}
+                    className={cn(
+                      'group relative cursor-pointer rounded-xl border p-3 transition',
+                      active
+                        ? 'border-brand-400/40 bg-brand-500/10 shadow-glow-sm'
+                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]'
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <ChatBubbleLeftRightIcon
+                            className={cn(
+                              'h-4 w-4 flex-shrink-0',
+                              active ? 'text-brand-300' : 'text-slate-500'
+                            )}
+                          />
+                          <p
+                            className={cn(
+                              'truncate text-sm font-medium',
+                              active ? 'text-white' : 'text-slate-300'
+                            )}
+                          >
+                            {conv.conversation_title || 'New Conversation'}
+                          </p>
+                        </div>
+                        <p className="mt-1.5 text-xs text-slate-500">
+                          {formatDate(conv.consultation_date)} · {conv.total_messages} message
+                          {conv.total_messages !== 1 ? 's' : ''}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => deleteConversation(conv.session_id, e)}
+                        className="ml-1 rounded-lg p-1 text-slate-500 opacity-0 transition hover:bg-rose-500/10 hover:text-rose-300 group-hover:opacity-100"
+                        aria-label="Delete conversation"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="flex-shrink-0 border-t border-white/10 p-3">
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+              <Avatar name={user?.full_name} className="h-9 w-9" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">
+                  {user?.full_name || 'Patient'}
+                </p>
+                <p className="text-xs text-slate-500">Patient</p>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        {/* Chat thread */}
+        <section className="flex min-h-0 min-w-0 flex-1 flex-col animate-fade-in-up">
+          {/* Thread toolbar */}
+          <div className="flex flex-shrink-0 items-center gap-2 border-b border-white/10 bg-ink-950/40 px-4 py-3 backdrop-blur-xl">
+            <IconButton
+              label={sidebarOpen ? 'Hide history' : 'Show history'}
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="h-9 w-9"
+            >
+              {sidebarOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
+            </IconButton>
+            <IconButton
+              label="Back to dashboard"
+              onClick={() => navigate('/dashboard')}
+              className="h-9 w-9"
+            >
+              <ArrowLeftIcon className="h-5 w-5" />
+            </IconButton>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow-sm">
+                <SparklesIcon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="truncate font-display text-sm font-bold text-white">
+                  AI Medical Assistant
+                </p>
+                <p className="truncate text-[11px] text-slate-500">Powered by MeroDaktar</p>
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              {symptomInterviewMode && (
+                <Badge tone="cyan">
+                  <ClipboardDocumentListIcon className="h-3.5 w-3.5" />
+                  Assessment · Q{questionNumber}
+                </Badge>
+              )}
+              {voiceEnabled && (
+                <Badge tone="emerald">
+                  <SpeakerWaveIcon className="h-3.5 w-3.5" />
+                  Voice on
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Body */}
+          {isLoadingHistory ? (
+            <div className="flex flex-1 items-center justify-center">
+              <div className="text-center">
+                <Spinner className="mx-auto h-10 w-10 text-brand-400" />
+                <p className="mt-4 text-sm font-medium text-slate-400">Loading conversation...</p>
+              </div>
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-6">
+              <div className="w-full max-w-md">
+                <EmptyState
+                  icon={<ChatBubbleLeftRightIcon className="h-7 w-7" />}
+                  title="Start a new conversation"
+                  description="Chat with our AI medical assistant about your health concerns. Get preliminary guidance and recommendations."
+                  action={
+                    <Button
+                      variant="primary"
+                      size="lg"
+                      onClick={createNewChat}
+                      leftIcon={<PlusIcon className="h-5 w-5" />}
+                    >
+                      Start New Chat
+                    </Button>
+                  }
+                />
+                <p className="mt-5 text-center text-xs text-slate-500">
+                  💡 This is not a replacement for professional medical advice
+                </p>
+              </div>
             </div>
           ) : (
-            conversations.map((conv) => (
-              <div
-                key={conv.id}
-                onClick={() => loadConversation(conv.session_id)}
-                className={`group p-3 rounded-lg cursor-pointer transition relative border ${
-                  conv.session_id === sessionId
-                    ? 'bg-blue-50 border-blue-200 shadow-sm'
-                    : 'bg-white border-gray-100 hover:bg-gray-50 hover:border-gray-200'
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2">
-                      <ChatBubbleLeftRightIcon className={`h-4 w-4 flex-shrink-0 ${
-                        conv.session_id === sessionId ? 'text-blue-500' : 'text-gray-400'
-                      }`} />
-                      <p className={`text-sm font-medium truncate ${
-                        conv.session_id === sessionId ? 'text-blue-700' : 'text-gray-700'
-                      }`}>
-                        {conv.conversation_title || 'New Conversation'}
-                      </p>
+            <div className="mx-auto flex min-h-0 w-full max-w-3xl flex-1 flex-col">
+              {/* Messages */}
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-6">
+                {messages.map((message) => {
+                  const isUser = message.sender === 'user';
+                  return (
+                    <div
+                      key={message.id}
+                      className={cn(
+                        'flex animate-fade-in-up gap-3',
+                        isUser ? 'justify-end' : 'justify-start'
+                      )}
+                    >
+                      {!isUser && (
+                        <span className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow-sm">
+                          <SparklesIcon className="h-4 w-4" />
+                        </span>
+                      )}
+                      <div
+                        className={cn(
+                          'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-glass',
+                          isUser
+                            ? 'rounded-br-sm bg-gradient-brand text-white'
+                            : 'rounded-bl-sm border border-white/10 bg-white/[0.05] text-slate-100 backdrop-blur-xl'
+                        )}
+                      >
+                        <p className="whitespace-pre-wrap">{message.text}</p>
+                        <p
+                          className={cn(
+                            'mt-1.5 text-[11px]',
+                            isUser ? 'text-white/70' : 'text-slate-500'
+                          )}
+                        >
+                          {message.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                      {isUser && (
+                        <Avatar name={user?.full_name} className="mt-0.5 h-8 w-8 flex-shrink-0" />
+                      )}
                     </div>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <p className="text-xs text-gray-500">
-                        {formatDate(conv.consultation_date)} • {conv.total_messages} message{conv.total_messages !== 1 ? 's' : ''}
-                      </p>
+                  );
+                })}
+                {isLoading && (
+                  <div className="flex justify-start gap-3">
+                    <span className="mt-0.5 inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow-sm">
+                      <SparklesIcon className="h-4 w-4" />
+                    </span>
+                    <div className="rounded-2xl rounded-bl-sm border border-white/10 bg-white/[0.05] px-4 py-3.5 backdrop-blur-xl">
+                      <div className="flex gap-1.5">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-brand-300" />
+                        <span
+                          className="h-2 w-2 animate-bounce rounded-full bg-brand-300"
+                          style={{ animationDelay: '0.15s' }}
+                        />
+                        <span
+                          className="h-2 w-2 animate-bounce rounded-full bg-brand-300"
+                          style={{ animationDelay: '0.3s' }}
+                        />
+                      </div>
                     </div>
                   </div>
-                  <button
-                    onClick={(e) => deleteConversation(conv.session_id, e)}
-                    className="opacity-0 group-hover:opacity-100 transition ml-2 text-gray-400 hover:text-red-500"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </button>
-                </div>
+                )}
+                <div ref={messagesEndRef} />
               </div>
-            ))
+
+              {/* Composer */}
+              <div className="sticky bottom-0 flex-shrink-0 border-t border-white/10 bg-ink-950/60 px-4 py-4 backdrop-blur-xl">
+                {symptomInterviewMode && (
+                  <div className="mb-2.5 flex items-center justify-center gap-1.5 text-xs font-medium text-accent-200">
+                    <ClipboardDocumentListIcon className="h-4 w-4" />
+                    Symptom Assessment in Progress · Question {questionNumber}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <IconButton
+                    label={isRecording ? 'Stop recording' : 'Start voice input'}
+                    onClick={handleVoiceInput}
+                    disabled={isLoading}
+                    className={cn(
+                      isRecording
+                        ? 'animate-pulse-glow bg-rose-500 text-white hover:bg-rose-500'
+                        : ''
+                    )}
+                  >
+                    <MicrophoneIcon className="h-5 w-5" />
+                  </IconButton>
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder={symptomInterviewMode ? 'Type your answer...' : 'Describe your symptoms...'}
+                    className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-slate-100 transition placeholder:text-slate-500 focus:border-brand-400/60 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
+                    disabled={isLoading}
+                  />
+                  {isSpeaking && (
+                    <IconButton
+                      label="Stop speaking"
+                      onClick={stopSpeaking}
+                      className="animate-pulse bg-rose-500 text-white hover:bg-rose-500"
+                    >
+                      <StopIcon className="h-5 w-5" />
+                    </IconButton>
+                  )}
+                  <IconButton
+                    label="Send message"
+                    onClick={handleSendMessage}
+                    disabled={isLoading || !inputMessage.trim()}
+                    className="bg-gradient-brand text-white shadow-glow-sm hover:brightness-110 disabled:opacity-50"
+                  >
+                    <PaperAirplaneIcon className="h-5 w-5" />
+                  </IconButton>
+                </div>
+                <p className="mt-2.5 text-center text-[11px] text-slate-500">
+                  This is not a replacement for professional medical advice.
+                </p>
+              </div>
+            </div>
           )}
-        </div>
-
-        <div className="p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
-          <div className="flex items-center space-x-2 mb-3">
-            <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-              {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-700 truncate">{user?.full_name}</p>
-              <p className="text-xs text-gray-500">Patient</p>
-            </div>
-          </div>
-          <button
-            onClick={onLogout}
-            className="w-full text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-200 py-2 rounded-lg transition font-medium"
-          >
-            Logout
-          </button>
-        </div>
+        </section>
       </div>
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
-          <div className="px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition"
-                >
-                  {sidebarOpen ? (
-                    <XMarkIcon className="h-6 w-6" />
-                  ) : (
-                    <Bars3Icon className="h-6 w-6" />
-                  )}
-                </button>
-                <button
-                  onClick={() => navigate('/dashboard')}
-                  className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-lg transition"
-                >
-                  <ArrowLeftIcon className="h-6 w-6" />
-                </button>
-                <img 
-                  src="/mero-daktar-logo.png" 
-                  alt="MeroDaktar Logo" 
-                  className="h-10 w-10"
-                />
-                <div>
-                  <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    AI Medical Assistant
-                  </h1>
-                  <p className="text-xs text-gray-500">Powered by MeroDaktar</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                {!symptomInterviewMode ? (
-                  <button
-                    onClick={startSymptomInterview}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg transition shadow-sm border bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"
-                  >
-                    <ClipboardDocumentListIcon className="h-5 w-5" />
-                    <span className="text-sm font-medium">Start Symptom Assessment</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={exitSymptomInterview}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg transition shadow-sm border bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                  >
-                    <XMarkIcon className="h-5 w-5" />
-                    <span className="text-sm font-medium">Exit Assessment</span>
-                  </button>
-                )}
-                <button
-                  onClick={toggleVoice}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition shadow-sm border ${
-                    voiceEnabled 
-                      ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100' 
-                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-                  }`}
-                >
-                  {voiceEnabled ? (
-                    <>
-                      <SpeakerWaveIcon className="h-5 w-5" />
-                      <span className="text-sm font-medium">Voice ON</span>
-                    </>
-                  ) : (
-                    <>
-                      <SpeakerXMarkIcon className="h-5 w-5" />
-                      <span className="text-sm font-medium">Voice OFF</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Chat Container */}
-        {isLoadingHistory ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-              <p className="mt-4 text-gray-600 font-medium">Loading conversation...</p>
-            </div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="text-center max-w-md">
-              <div className="bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full h-24 w-24 flex items-center justify-center mx-auto mb-6">
-                <ChatBubbleLeftRightIcon className="h-12 w-12 text-blue-600" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-3">Start a New Conversation</h2>
-              <p className="text-gray-600 mb-8 leading-relaxed">
-                Chat with our AI medical assistant about your health concerns. Get preliminary guidance and recommendations.
-              </p>
-              <button
-                onClick={createNewChat}
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-8 py-3 rounded-lg font-semibold transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-              >
-                <PlusIcon className="h-5 w-5" />
-                <span>Start New Chat</span>
-              </button>
-              <p className="text-xs text-gray-500 mt-6">
-                💡 This is not a replacement for professional medical advice
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col max-w-5xl mx-auto w-full min-h-0">
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-6 space-y-4 min-h-0">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[70%] rounded-lg p-4 ${
-                      message.sender === 'user'
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap">{message.text}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 rounded-lg p-4">
-                    <div className="flex space-x-2">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="border-t p-4 flex-shrink-0 bg-white">
-              {symptomInterviewMode && (
-                <div className="mb-2 text-center text-sm text-teal-600 font-medium">
-                  🏥 Symptom Assessment in Progress - Question {questionNumber}
-                </div>
-              )}
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleVoiceInput}
-                  className={`p-2 rounded-lg transition ${
-                    isRecording
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                  }`}
-                  title={isRecording ? 'Stop Recording' : 'Start Voice Input'}
-                  disabled={isLoading}
-                >
-                  <MicrophoneIcon className="h-6 w-6" />
-                </button>
-                <input
-                  type="text"
-                  value={inputMessage}
-                  onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  placeholder={symptomInterviewMode ? "Type your answer..." : "Describe your symptoms..."}
-                  className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={isLoading}
-                />
-                {isSpeaking && (
-                  <button
-                    onClick={stopSpeaking}
-                    className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 animate-pulse"
-                  >
-                    <SpeakerXMarkIcon className="h-6 w-6" />
-                  </button>
-                )}
-                <button
-                  onClick={handleSendMessage}
-                  disabled={isLoading || !inputMessage.trim()}
-                  className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-                >
-                  <PaperAirplaneIcon className="h-6 w-6" />
-                </button>
-              </div>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                This is not a replacement for professional medical advice.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+    </AppLayout>
   );
 };
 

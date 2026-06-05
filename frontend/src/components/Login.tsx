@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  EnvelopeIcon,
+  LockClosedIcon,
+  UserIcon,
+  PhoneIcon,
+  CalendarDaysIcon,
+  ExclamationTriangleIcon,
+  ArrowRightIcon,
+} from '@heroicons/react/24/outline';
+import { Button, Card, Input, Select, Field } from '../lib/ui';
+import AuthLayout from './layout/AuthLayout';
 
 interface LoginProps {
   onLogin: (token: string) => void;
@@ -63,86 +74,109 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-96">
-        <div className="flex flex-col items-center mb-6">
-          <img 
-            src="/mero-daktar-logo.png" 
-            alt="MeroDaktar Logo" 
-            className="h-20 w-20 mb-3"
-          />
-          <h2 className="text-3xl font-bold text-center text-blue-600">
-            MeroDaktar
+    <AuthLayout variant="patient">
+      <Card className="animate-fade-in-up p-8">
+        <div className="mb-7 text-center">
+          <h2 className="font-display text-2xl font-bold tracking-tight text-white">
+            {isLogin ? 'Welcome back' : 'Create your account'}
           </h2>
-          <p className="text-sm text-gray-500 text-center mt-1">Your Health, Our Priority</p>
+          <p className="mt-1.5 text-sm text-slate-400">
+            {isLogin
+              ? 'Sign in to continue to your care dashboard.'
+              : 'Join MeroDaktar and start your health journey.'}
+          </p>
         </div>
-        <h3 className="text-xl text-center mb-6 text-gray-700 font-semibold">
-          {isLogin ? 'Patient Sign In' : 'Create Patient Account'}
-        </h3>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            {error}
+          <div className="mb-5 flex items-start gap-3 rounded-xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200 animate-fade-in">
+            <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0 text-rose-300" />
+            <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
-          <input
-            type="email"
-            placeholder="Email"
-            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            required
-          />
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <Field label="Email" htmlFor="email" required>
+            <div className="relative">
+              <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                className="pl-11"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+            </div>
+          </Field>
 
-          <input
-            type="password"
-            placeholder="Password"
-            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            maxLength={72}
-            minLength={8}
-            required
-          />
+          <Field label="Password" htmlFor="password" required>
+            <div className="relative">
+              <LockClosedIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                className="pl-11"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                maxLength={72}
+                minLength={8}
+                required
+              />
+            </div>
+          </Field>
 
           {!isLogin && (
             <>
-              <input
-                type="text"
-                placeholder="Full Name"
-                className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                required
-              />
+              <Field label="Full Name" htmlFor="full_name" required>
+                <div className="relative">
+                  <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <Input
+                    id="full_name"
+                    type="text"
+                    placeholder="Jane Doe"
+                    className="pl-11"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    required
+                  />
+                </div>
+              </Field>
 
-              <input
-                type="tel"
-                placeholder="Phone Number"
-                className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                required
-              />
+              <Field label="Phone Number" htmlFor="phone" required>
+                <div className="relative">
+                  <PhoneIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <Input
+                    id="phone"
+                    type="tel"
+                    placeholder="+977 98XXXXXXXX"
+                    className="pl-11"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    required
+                  />
+                </div>
+              </Field>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
-                <input
-                  type="date"
-                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={formData.date_of_birth}
-                  onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                  max={new Date().toISOString().split('T')[0]}
-                  required
-                />
-              </div>
+              <Field label="Date of Birth" htmlFor="date_of_birth" required>
+                <div className="relative">
+                  <CalendarDaysIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    className="pl-11 [color-scheme:dark]"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                    max={new Date().toISOString().split('T')[0]}
+                    required
+                  />
+                </div>
+              </Field>
 
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Gender *</label>
-                <select
-                  className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <Field label="Gender" htmlFor="gender" required>
+                <Select
+                  id="gender"
                   value={formData.gender}
                   onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   required
@@ -151,39 +185,38 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <option value="male">Male</option>
                   <option value="female">Female</option>
                   <option value="other">Other</option>
-                </select>
-              </div>
+                </Select>
+              </Field>
             </>
           )}
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-200"
-          >
-            {isLogin ? 'Sign In' : 'Register'}
-          </button>
+          <Button type="submit" variant="primary" size="lg" fullWidth rightIcon={<ArrowRightIcon className="h-5 w-5" />}>
+            {isLogin ? 'Sign In' : 'Create account'}
+          </Button>
         </form>
 
-        <p className="text-center mt-4 text-gray-600">
-          {isLogin ? "Don't have an account? " : "Already have an account? "}
+        <p className="mt-6 text-center text-sm text-slate-400">
+          {isLogin ? "Don't have an account? " : 'Already have an account? '}
           <button
+            type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 hover:underline"
+            className="font-semibold text-brand-300 transition-colors hover:text-brand-200"
           >
             {isLogin ? 'Register' : 'Sign In'}
           </button>
         </p>
-        
-        <div className="mt-4 text-center">
+
+        <div className="mt-6 border-t border-white/10 pt-5 text-center">
           <a
             href="/doctor/login"
-            className="text-teal-600 hover:text-teal-800 text-sm font-semibold"
+            className="inline-flex items-center gap-1.5 text-sm font-semibold text-accent-300 transition-colors hover:text-accent-200"
           >
-            Doctor Portal →
+            Doctor Portal
+            <ArrowRightIcon className="h-4 w-4" />
           </a>
         </div>
-      </div>
-    </div>
+      </Card>
+    </AuthLayout>
   );
 };
 

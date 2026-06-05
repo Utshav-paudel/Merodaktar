@@ -1,9 +1,70 @@
 import React, { useState, useEffect } from 'react';
+import {
+  CalendarDaysIcon,
+  ClockIcon,
+  ClipboardDocumentCheckIcon,
+  CheckCircleIcon,
+  UsersIcon,
+  TrashIcon,
+  PencilSquareIcon,
+  PlusIcon,
+  XMarkIcon,
+  DocumentTextIcon,
+  ExclamationTriangleIcon,
+  BeakerIcon,
+  HeartIcon,
+  SparklesIcon,
+  ClipboardDocumentListIcon,
+  UserCircleIcon,
+  CheckIcon,
+} from '@heroicons/react/24/outline';
+import {
+  Button,
+  IconButton,
+  Card,
+  Input,
+  Textarea,
+  Select,
+  Field,
+  Badge,
+  Spinner,
+  StatCard,
+  EmptyState,
+  cn,
+} from '../lib/ui';
+import AppLayout from './layout/AppLayout';
+import type { BadgeTone } from '../lib/ui';
 
 interface DoctorDashboardProps {
   token: string;
   onLogout: () => void;
 }
+
+const statusTone = (status: string): BadgeTone => {
+  switch (status) {
+    case 'confirmed':
+      return 'blue';
+    case 'completed':
+      return 'emerald';
+    case 'cancelled':
+      return 'rose';
+    default:
+      return 'amber';
+  }
+};
+
+const severityTone = (severity: string): BadgeTone => {
+  switch (severity) {
+    case 'emergency':
+      return 'rose';
+    case 'severe':
+      return 'amber';
+    case 'moderate':
+      return 'amber';
+    default:
+      return 'emerald';
+  }
+};
 
 const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'appointments' | 'patients' | 'schedule'>('overview');
@@ -16,7 +77,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
   const [notes, setNotes] = useState({ note: '', diagnosis: '', prescription: '', follow_up_date: '' });
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
-  
+
   // Patient encounters state
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [patientEncounters, setPatientEncounters] = useState<any[]>([]);
@@ -27,7 +88,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
   const [patientEhr, setPatientEhr] = useState<any>(null);
   const [patientInfo, setPatientInfo] = useState<any>(null);
   const [savingNote, setSavingNote] = useState(false);
-  
+
   // Schedule management state
   const [schedule, setSchedule] = useState<any[]>([]);
   const [scheduleLoading, setScheduleLoading] = useState(false);
@@ -88,7 +149,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
       if (patientsRes.ok) {
         const data = await patientsRes.json();
         console.log('[DOCTOR] Appointments data:', data);
-        
+
         // Extract unique patients from appointments
         const patientMap = new Map();
         (data || []).forEach((apt: any) => {
@@ -107,12 +168,12 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
             }
           }
         });
-        
+
         const uniquePatients = Array.from(patientMap.values());
         console.log('[DOCTOR] Unique patients:', uniquePatients);
         setPatients(uniquePatients);
       }
-      
+
       // Fetch schedule
       await fetchSchedule();
     } catch (error) {
@@ -144,13 +205,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
     setLoadingEncounters(true);
     setSelectedPatient(patientId);
     setSelectedEncounters([]); // Clear previous selections
-    
+
     try {
       console.log('[DOCTOR] Fetching encounters for patient:', patientId);
       const response = await fetch(`http://localhost:8000/api/v1/ehr/patients/${patientId}/encounters`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('[DOCTOR] Patient encounters:', data);
@@ -193,7 +254,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
       const response = await fetch(`http://localhost:8000/api/v1/ehr/encounters/${encounterId}/full`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         console.log('[DOCTOR] Full encounter data:', data);
@@ -216,7 +277,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
   // Save doctor note to encounter
   const saveEncounterNote = async () => {
     if (!detailedEncounter) return;
-    
+
     setSavingNote(true);
     try {
       const response = await fetch(`http://localhost:8000/api/v1/ehr/encounters/${detailedEncounter.id}`, {
@@ -302,13 +363,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
     try {
       const response = await fetch(`http://localhost:8000/api/v1/appointments/${appointmentId}`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ status })
       });
-      
+
       if (response.ok) {
         fetchDoctorData(); // Refresh data
         alert('Appointment status updated!');
@@ -326,13 +387,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
     if (!confirm('Are you sure you want to delete this appointment? This action cannot be undone.')) {
       return;
     }
-    
+
     try {
       const response = await fetch(`http://localhost:8000/api/v1/appointments/${appointmentId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       if (response.ok) {
         fetchDoctorData(); // Refresh data
         alert('Appointment deleted successfully!');
@@ -368,7 +429,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
         },
         body: formData.toString()
       });
-      
+
       if (response.ok) {
         // If appointment has linked encounter, update encounter with doctor notes
         if (selectedAppointment?.encounter_id) {
@@ -392,7 +453,7 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
             // Don't fail the whole operation if encounter update fails
           }
         }
-        
+
         setNotes({ note: '', diagnosis: '', prescription: '', follow_up_date: '' });
         setSelectedAppointment(null);
         fetchDoctorData();
@@ -436,244 +497,293 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
-      </div>
+      <AppLayout role="doctor" onLogout={onLogout} title="Dashboard">
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <div className="flex flex-col items-center gap-4 text-slate-400">
+            <Spinner className="h-10 w-10 text-brand-400" />
+            <p className="text-sm">Loading your dashboard...</p>
+          </div>
+        </div>
+      </AppLayout>
     );
   }
 
+  const tabs: { key: typeof activeTab; label: string; icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }[] = [
+    { key: 'overview', label: 'Overview', icon: ClipboardDocumentListIcon },
+    { key: 'appointments', label: 'Appointments', icon: CalendarDaysIcon },
+    { key: 'patients', label: 'Patients', icon: UsersIcon },
+    { key: 'schedule', label: 'Schedule', icon: ClockIcon },
+  ];
+
+  const subtitle = profile
+    ? `Dr. ${profile.full_name}${profile.specialization ? ` · ${profile.specialization}` : ''}`
+    : undefined;
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white shadow-sm border-b-4 border-teal-500">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <img 
-              src="/mero-daktar-logo.png" 
-              alt="MeroDaktar Logo" 
-              className="h-12 w-12"
-            />
-            <div>
-              <h1 className="text-2xl font-bold text-teal-600">MeroDaktar</h1>
-              <p className="text-xs text-gray-500">Doctor Dashboard</p>
-              {profile && (
-                <p className="text-sm text-gray-600 font-medium">Dr. {profile.full_name} - {profile.specialization}</p>
-              )}
-            </div>
+    <AppLayout role="doctor" onLogout={onLogout} title="Dashboard" subtitle={subtitle}>
+      <div className="animate-fade-in-up space-y-8">
+        {/* Welcome / header */}
+        <div className="flex flex-col gap-2">
+          <h2 className="font-display text-3xl font-bold text-white">
+            Welcome back{profile ? `, Dr. ${profile.full_name}` : ''}
+          </h2>
+          <p className="text-sm text-slate-400">
+            {profile?.specialization
+              ? `${profile.specialization} — here is what's happening today.`
+              : "Here is what's happening today."}
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <Card className="p-1.5">
+          <div className="flex flex-wrap gap-1">
+            {tabs.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
+                  activeTab === key
+                    ? 'bg-gradient-brand text-white shadow-glow-sm'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </button>
+            ))}
           </div>
-          <button
-            onClick={onLogout}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+        </Card>
 
-      {/* Tabs */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex space-x-4 border-b">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 font-semibold ${activeTab === 'overview' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-600'}`}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('appointments')}
-            className={`px-4 py-2 font-semibold ${activeTab === 'appointments' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-600'}`}
-          >
-            Appointments
-          </button>
-          <button
-            onClick={() => setActiveTab('patients')}
-            className={`px-4 py-2 font-semibold ${activeTab === 'patients' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-600'}`}
-          >
-            Patients
-          </button>
-          <button
-            onClick={() => setActiveTab('schedule')}
-            className={`px-4 py-2 font-semibold ${activeTab === 'schedule' ? 'text-teal-600 border-b-2 border-teal-600' : 'text-gray-600'}`}
-          >
-            Schedule
-          </button>
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Overview Tab */}
         {activeTab === 'overview' && (
           <div className="space-y-6">
             {/* Stats Cards */}
             {stats && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <p className="text-gray-600 text-sm">Total Appointments</p>
-                  <p className="text-3xl font-bold text-teal-600">{stats.total_appointments}</p>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <p className="text-gray-600 text-sm">Today's Appointments</p>
-                  <p className="text-3xl font-bold text-blue-600">{stats.today_appointments}</p>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <p className="text-gray-600 text-sm">Pending</p>
-                  <p className="text-3xl font-bold text-yellow-600">{stats.pending_appointments}</p>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <p className="text-gray-600 text-sm">Completed</p>
-                  <p className="text-3xl font-bold text-green-600">{stats.completed_appointments}</p>
-                </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
-                  <p className="text-gray-600 text-sm">Total Patients</p>
-                  <p className="text-3xl font-bold text-purple-600">{stats.total_patients}</p>
-                </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                <StatCard
+                  label="Total Appointments"
+                  value={stats.total_appointments}
+                  icon={<CalendarDaysIcon className="h-6 w-6" />}
+                  tone="brand"
+                />
+                <StatCard
+                  label="Today's Appointments"
+                  value={stats.today_appointments}
+                  icon={<ClockIcon className="h-6 w-6" />}
+                  tone="blue"
+                />
+                <StatCard
+                  label="Pending"
+                  value={stats.pending_appointments}
+                  icon={<ClipboardDocumentCheckIcon className="h-6 w-6" />}
+                  tone="amber"
+                />
+                <StatCard
+                  label="Completed"
+                  value={stats.completed_appointments}
+                  icon={<CheckCircleIcon className="h-6 w-6" />}
+                  tone="emerald"
+                />
+                <StatCard
+                  label="Total Patients"
+                  value={stats.total_patients}
+                  icon={<UsersIcon className="h-6 w-6" />}
+                  tone="cyan"
+                />
               </div>
             )}
 
             {/* Today's Appointments */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold mb-4">Today's Appointments</h3>
+            <Card className="p-6">
+              <div className="mb-5 flex items-center gap-2">
+                <ClockIcon className="h-5 w-5 text-brand-300" />
+                <h3 className="font-display text-lg font-semibold text-white">Today's Appointments</h3>
+              </div>
               {todayAppointments.length > 0 ? (
                 <div className="space-y-3">
                   {todayAppointments.map((apt) => (
-                    <div key={apt.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex justify-between items-start">
+                    <div
+                      key={apt.id}
+                      className="rounded-xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 hover:bg-white/[0.05]"
+                    >
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex-1">
-                          <p className="font-semibold">{apt.patient_name}</p>
-                          <p className="text-sm text-gray-600">{apt.appointment_time}</p>
-                          <p className="text-sm text-gray-500 mt-1">Reason: {apt.reason}</p>
-                          <span className={`inline-block mt-2 px-2 py-1 text-xs rounded-full ${
-                            apt.status === 'confirmed' ? 'bg-blue-100 text-blue-800' :
-                            apt.status === 'completed' ? 'bg-green-100 text-green-800' :
-                            apt.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                            'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {apt.status.toUpperCase()}
-                          </span>
+                          <p className="font-semibold text-white">{apt.patient_name}</p>
+                          <p className="mt-0.5 text-sm text-slate-400">{apt.appointment_time}</p>
+                          <p className="mt-1 text-sm text-slate-500">Reason: {apt.reason}</p>
+                          <div className="mt-2">
+                            <Badge tone={statusTone(apt.status)}>{apt.status.toUpperCase()}</Badge>
+                          </div>
                         </div>
-                        <div className="flex space-x-2">
-                          <select
+                        <div className="flex items-center gap-2">
+                          <Select
                             value={apt.status}
                             onChange={(e) => updateAppointmentStatus(apt.id, e.target.value)}
-                            className="px-2 py-1 border rounded text-sm"
+                            className="w-auto py-2 text-sm"
                           >
                             <option value="confirmed">Confirmed</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
                             <option value="no-show">No Show</option>
-                          </select>
-                          <button
+                          </Select>
+                          <IconButton
+                            label="Delete Appointment"
                             onClick={() => deleteAppointment(apt.id)}
-                            className="px-2 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 transition"
-                            title="Delete Appointment"
+                            className="hover:bg-rose-500/10 hover:text-rose-300"
                           >
-                            ✕
-                          </button>
+                            <TrashIcon className="h-5 w-5" />
+                          </IconButton>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-4">No appointments today</p>
+                <EmptyState
+                  icon={<CalendarDaysIcon className="h-7 w-7" />}
+                  title="No appointments today"
+                  description="You have a clear schedule for the day."
+                />
               )}
-            </div>
+            </Card>
           </div>
         )}
 
+        {/* Appointments Tab */}
         {activeTab === 'appointments' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4">All Appointments</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Reason</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {appointments.map((apt) => (
-                    <tr key={apt.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">{apt.patient_name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{new Date(apt.appointment_date).toLocaleDateString()}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">{apt.appointment_time}</td>
-                      <td className="px-6 py-4">{apt.reason}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <select
-                          value={apt.status}
-                          onChange={(e) => updateAppointmentStatus(apt.id, e.target.value)}
-                          className="px-2 py-1 border rounded text-sm"
-                        >
-                          <option value="confirmed">Confirmed</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                          <option value="no-show">No Show</option>
-                        </select>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <button
-                          onClick={() => handleSelectAppointment(apt)}
-                          className="text-teal-600 hover:text-teal-800 text-sm"
-                        >
-                          Add Notes
-                        </button>
-                        <button
-                          onClick={() => deleteAppointment(apt.id)}
-                          className="ml-2 text-red-600 hover:text-red-800 text-sm"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <Card className="p-6">
+            <div className="mb-5 flex items-center gap-2">
+              <CalendarDaysIcon className="h-5 w-5 text-brand-300" />
+              <h3 className="font-display text-lg font-semibold text-white">All Appointments</h3>
             </div>
-          </div>
+            {appointments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-white/5">
+                  <thead>
+                    <tr className="text-left text-xs font-semibold uppercase tracking-wider text-slate-400">
+                      <th className="px-4 py-3">Patient</th>
+                      <th className="px-4 py-3">Date</th>
+                      <th className="px-4 py-3">Time</th>
+                      <th className="px-4 py-3">Reason</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-sm text-slate-300">
+                    {appointments.map((apt) => (
+                      <tr key={apt.id} className="transition hover:bg-white/[0.03]">
+                        <td className="whitespace-nowrap px-4 py-4 font-medium text-white">{apt.patient_name}</td>
+                        <td className="whitespace-nowrap px-4 py-4">{new Date(apt.appointment_date).toLocaleDateString()}</td>
+                        <td className="whitespace-nowrap px-4 py-4">{apt.appointment_time}</td>
+                        <td className="px-4 py-4 text-slate-400">{apt.reason}</td>
+                        <td className="whitespace-nowrap px-4 py-4">
+                          <Select
+                            value={apt.status}
+                            onChange={(e) => updateAppointmentStatus(apt.id, e.target.value)}
+                            className="w-auto py-2 text-sm"
+                          >
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="no-show">No Show</option>
+                          </Select>
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              leftIcon={<PencilSquareIcon className="h-4 w-4" />}
+                              onClick={() => handleSelectAppointment(apt)}
+                            >
+                              Add Notes
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              leftIcon={<TrashIcon className="h-4 w-4" />}
+                              onClick={() => deleteAppointment(apt.id)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <EmptyState
+                icon={<CalendarDaysIcon className="h-7 w-7" />}
+                title="No appointments yet"
+                description="Appointments booked by patients will appear here."
+              />
+            )}
+          </Card>
         )}
 
+        {/* Patients Tab */}
         {activeTab === 'patients' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h3 className="text-lg font-semibold mb-4">My Patients</h3>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card className="p-6">
+            <div className="mb-5 flex items-center gap-2">
+              <UsersIcon className="h-5 w-5 text-brand-300" />
+              <h3 className="font-display text-lg font-semibold text-white">My Patients</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               {/* Patient List */}
               <div>
-                <h4 className="text-md font-semibold mb-3">Patient List</h4>
-                <div className="space-y-3">
-                  {patients.map((patient) => (
-                    <div 
-                      key={patient.id || patient.email} 
-                      className={`border rounded-lg p-4 cursor-pointer hover:bg-gray-50 ${
-                        selectedPatient === patient.id ? 'bg-teal-50 border-teal-500' : ''
-                      }`}
-                      onClick={() => fetchPatientEncounters(patient.id)}
-                    >
-                      <h4 className="font-semibold">{patient.name}</h4>
-                      <p className="text-sm text-gray-600">{patient.email}</p>
-                      <div className="mt-2 text-sm">
-                        <p>Total Appointments: {patient.total_appointments}</p>
-                        {patient.last_visit && (
-                          <p>Last Visit: {new Date(patient.last_visit).toLocaleDateString()}</p>
+                <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">Patient List</h4>
+                {patients.length > 0 ? (
+                  <div className="space-y-3">
+                    {patients.map((patient) => (
+                      <button
+                        key={patient.id || patient.email}
+                        type="button"
+                        className={cn(
+                          'w-full rounded-xl border p-4 text-left transition',
+                          selectedPatient === patient.id
+                            ? 'border-brand-400/50 bg-brand-500/10 shadow-glow-sm'
+                            : 'border-white/10 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.05]'
                         )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                        onClick={() => fetchPatientEncounters(patient.id)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-brand text-sm font-bold text-white">
+                            {(patient.name || '?').charAt(0).toUpperCase()}
+                          </span>
+                          <div className="min-w-0">
+                            <h4 className="truncate font-semibold text-white">{patient.name}</h4>
+                            <p className="truncate text-sm text-slate-400">{patient.email}</p>
+                            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-400">
+                              <Badge tone="slate">{patient.total_appointments} appointment(s)</Badge>
+                              {patient.last_visit && (
+                                <span>Last visit: {new Date(patient.last_visit).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptyState
+                    icon={<UsersIcon className="h-7 w-7" />}
+                    title="No patients yet"
+                    description="Patients you treat will appear here."
+                  />
+                )}
               </div>
 
               {/* Patient Encounters */}
               <div>
-                <div className="flex justify-between items-center mb-3">
-                  <h4 className="text-md font-semibold">Medical History</h4>
+                <div className="mb-3 flex items-center justify-between">
+                  <h4 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Medical History</h4>
                   {patientEncounters.length > 0 && (
                     <button
                       onClick={selectAllEncounters}
-                      className="text-sm text-teal-600 hover:text-teal-800"
+                      className="text-sm font-medium text-brand-300 transition hover:text-brand-200"
                     >
                       {selectedEncounters.length === patientEncounters.length ? 'Deselect All' : 'Select All'}
                     </button>
@@ -681,43 +791,50 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                 </div>
 
                 {selectedPatient === null && (
-                  <div className="text-center py-8 text-gray-500">
-                    Select a patient to view their medical history
-                  </div>
+                  <EmptyState
+                    icon={<ClipboardDocumentListIcon className="h-7 w-7" />}
+                    title="Select a patient"
+                    description="Choose a patient to view their medical history."
+                  />
                 )}
 
                 {selectedPatient !== null && loadingEncounters && (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                  <div className="flex items-center justify-center py-12">
+                    <Spinner className="h-8 w-8 text-brand-400" />
                   </div>
                 )}
 
                 {selectedPatient !== null && !loadingEncounters && patientEncounters.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No medical history found for this patient
-                  </div>
+                  <EmptyState
+                    icon={<DocumentTextIcon className="h-7 w-7" />}
+                    title="No medical history"
+                    description="No encounters found for this patient."
+                  />
                 )}
 
                 {selectedPatient !== null && !loadingEncounters && patientEncounters.length > 0 && (
-                  <div className="space-y-4 max-h-[600px] overflow-y-auto">
+                  <div className="max-h-[600px] space-y-4 overflow-y-auto pr-1">
                     {patientEncounters.map((encounter) => (
-                      <div 
-                        key={encounter.id} 
-                        className={`border rounded-lg p-4 ${
-                          selectedEncounters.includes(encounter.id) ? 'bg-teal-50 border-teal-500' : ''
-                        }`}
+                      <div
+                        key={encounter.id}
+                        className={cn(
+                          'rounded-xl border p-4 transition',
+                          selectedEncounters.includes(encounter.id)
+                            ? 'border-brand-400/50 bg-brand-500/10'
+                            : 'border-white/10 bg-white/[0.03]'
+                        )}
                       >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center space-x-3">
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
                             <input
                               type="checkbox"
                               checked={selectedEncounters.includes(encounter.id)}
                               onChange={() => toggleEncounterSelection(encounter.id)}
-                              className="h-4 w-4 text-teal-600 rounded"
+                              className="mt-1 h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500/40"
                             />
                             <div>
-                              <h5 className="font-semibold text-gray-800">{encounter.chief_complaint}</h5>
-                              <p className="text-sm text-gray-600">
+                              <h5 className="font-semibold text-white">{encounter.chief_complaint}</h5>
+                              <p className="text-sm text-slate-400">
                                 {new Date(encounter.encounter_date).toLocaleDateString('en-US', {
                                   year: 'numeric',
                                   month: 'long',
@@ -726,31 +843,24 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 text-xs rounded-full ${
-                              encounter.severity === 'emergency' ? 'bg-red-100 text-red-800' :
-                              encounter.severity === 'severe' ? 'bg-orange-100 text-orange-800' :
-                              encounter.severity === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {encounter.severity}
-                            </span>
-                            <button
-                              onClick={() => viewEncounterDetails(encounter.id)}
-                              className="px-3 py-1 bg-teal-600 text-white text-xs rounded hover:bg-teal-700 transition"
-                            >
+                          <div className="flex items-center gap-2">
+                            <Badge tone={severityTone(encounter.severity)}>{encounter.severity}</Badge>
+                            <Button size="sm" variant="primary" onClick={() => viewEncounterDetails(encounter.id)}>
                               View Details
-                            </button>
+                            </Button>
                           </div>
                         </div>
 
                         {/* Symptoms */}
                         {encounter.symptoms && encounter.symptoms.length > 0 && (
                           <div className="mb-3">
-                            <h6 className="text-xs font-semibold text-gray-600 mb-1">Symptoms:</h6>
-                            <div className="flex flex-wrap gap-1">
+                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Symptoms</h6>
+                            <div className="flex flex-wrap gap-1.5">
                               {encounter.symptoms.map((symptom: any, idx: number) => (
-                                <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                                <span
+                                  key={idx}
+                                  className="rounded-lg bg-white/10 px-2 py-1 text-xs text-slate-300"
+                                >
                                   {typeof symptom === 'string' ? symptom : symptom.symptom || symptom.name || JSON.stringify(symptom)}
                                 </span>
                               ))}
@@ -761,10 +871,10 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                         {/* Assessment Report - Truncated */}
                         {encounter.assessment_report && (
                           <div className="mb-3">
-                            <h6 className="text-xs font-semibold text-gray-600 mb-1">Assessment:</h6>
-                            <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded">
-                              {encounter.assessment_report.length > 200 
-                                ? `${encounter.assessment_report.substring(0, 200)}...` 
+                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Assessment</h6>
+                            <div className="rounded-lg bg-white/5 p-2 text-sm text-slate-300">
+                              {encounter.assessment_report.length > 200
+                                ? `${encounter.assessment_report.substring(0, 200)}...`
                                 : encounter.assessment_report
                               }
                             </div>
@@ -774,10 +884,10 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                         {/* Doctor's Note - Truncated */}
                         {encounter.doctor_notes && (
                           <div className="mb-3">
-                            <h6 className="text-xs font-semibold text-gray-600 mb-1">Doctor's Note:</h6>
-                            <p className="text-sm text-gray-700">
-                              {encounter.doctor_notes.length > 150 
-                                ? `${encounter.doctor_notes.substring(0, 150)}...` 
+                            <h6 className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Doctor's Note</h6>
+                            <p className="text-sm text-slate-300">
+                              {encounter.doctor_notes.length > 150
+                                ? `${encounter.doctor_notes.substring(0, 150)}...`
                                 : encounter.doctor_notes
                               }
                             </p>
@@ -786,11 +896,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                         {/* Recommended Specialization */}
                         {encounter.recommended_specialization && (
-                          <div className="flex items-center space-x-2 text-xs text-gray-600">
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
                             <span className="font-semibold">Recommended:</span>
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+                            <Badge tone="blue">
                               {encounter.recommended_specialization.replace('_', ' ').toUpperCase()}
-                            </span>
+                            </Badge>
                           </div>
                         )}
                       </div>
@@ -799,22 +909,28 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                 )}
 
                 {selectedEncounters.length > 0 && (
-                  <div className="mt-4 p-3 bg-teal-50 rounded-lg">
-                    <p className="text-sm text-gray-700">
-                      <span className="font-semibold">{selectedEncounters.length}</span> encounter(s) selected
+                  <div className="mt-4 rounded-xl border border-brand-400/30 bg-brand-500/10 p-3">
+                    <p className="text-sm text-slate-200">
+                      <span className="font-semibold text-white">{selectedEncounters.length}</span> encounter(s) selected
                     </p>
                   </div>
                 )}
               </div>
             </div>
-          </div>
+          </Card>
         )}
 
+        {/* Schedule Tab */}
         {activeTab === 'schedule' && (
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">My Schedule</h3>
-              <button
+          <Card className="p-6">
+            <div className="mb-5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ClockIcon className="h-5 w-5 text-brand-300" />
+                <h3 className="font-display text-lg font-semibold text-white">My Schedule</h3>
+              </div>
+              <Button
+                variant="primary"
+                leftIcon={<PlusIcon className="h-4 w-4" />}
                 onClick={() => {
                   setEditingDay(-1); // Use -1 to indicate new entry
                   setScheduleForm({
@@ -825,32 +941,48 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                     is_available: true
                   });
                 }}
-                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
               >
-                + Add Schedule
-              </button>
+                Add Schedule
+              </Button>
             </div>
             {scheduleLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+              <div className="flex items-center justify-center py-12">
+                <Spinner className="h-8 w-8 text-brand-400" />
               </div>
             ) : (
               <div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   {schedule.length === 0 && (
-                    <div className="col-span-1 text-center py-4">
-                      <p className="text-gray-500">No schedule found. Please add your availability.</p>
+                    <div className="md:col-span-2">
+                      <EmptyState
+                        icon={<ClockIcon className="h-7 w-7" />}
+                        title="No schedule found"
+                        description="Please add your availability to start accepting appointments."
+                      />
                     </div>
                   )}
                   {schedule.map((day) => (
-                    <div key={day.id} className="border rounded-lg p-4 flex flex-col sm:flex-row justify-between items-start">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold">{getDayName(day.day_of_week)}</p>
-                        <p className="text-sm text-gray-600">{day.start_time} - {day.end_time}</p>
-                        <p className="text-sm text-gray-500">Slot Duration: {day.slot_duration_minutes} mins</p>
+                    <div
+                      key={day.id}
+                      className="flex flex-col items-start justify-between rounded-xl border border-white/10 bg-white/[0.03] p-4 transition hover:border-white/20 sm:flex-row"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-semibold text-white">{getDayName(day.day_of_week)}</p>
+                          {day.is_available ? (
+                            <Badge tone="emerald">Available</Badge>
+                          ) : (
+                            <Badge tone="slate">Off</Badge>
+                          )}
+                        </div>
+                        <p className="mt-1 text-sm text-slate-400">{day.start_time} - {day.end_time}</p>
+                        <p className="text-sm text-slate-500">Slot Duration: {day.slot_duration_minutes} mins</p>
                       </div>
-                      <div className="flex-shrink-0 mt-2 sm:mt-0 sm:ml-4">
-                        <button
+                      <div className="mt-3 flex flex-shrink-0 items-center gap-2 sm:mt-0 sm:ml-4">
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          leftIcon={<PencilSquareIcon className="h-4 w-4" />}
                           onClick={() => {
                             setEditingDay(day.day_of_week);
                             setScheduleForm({
@@ -861,16 +993,17 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                               is_available: day.is_available
                             });
                           }}
-                          className="px-3 py-1 bg-teal-600 text-white text-sm rounded hover:bg-teal-700"
                         >
                           Edit
-                        </button>
-                        <button
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          leftIcon={<TrashIcon className="h-4 w-4" />}
                           onClick={() => deleteScheduleDay(day.id)}
-                          className="ml-2 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -878,15 +1011,15 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Add/Edit Schedule Form */}
                 {editingDay !== null && (
-                  <div className="mt-6 p-4 border rounded-lg bg-gray-50">
-                    <h4 className="font-semibold mb-4">{editingDay === -1 ? 'Add New Schedule' : 'Edit Schedule'}</h4>
+                  <div className="mt-6 rounded-xl border border-white/10 bg-white/[0.03] p-5">
+                    <h4 className="mb-4 font-display text-base font-semibold text-white">
+                      {editingDay === -1 ? 'Add New Schedule' : 'Edit Schedule'}
+                    </h4>
                     <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Day of Week</label>
-                        <select
+                      <Field label="Day of Week">
+                        <Select
                           value={scheduleForm.day_of_week}
                           onChange={(e) => setScheduleForm({ ...scheduleForm, day_of_week: Number(e.target.value) })}
-                          className="w-full p-2 border rounded-lg"
                         >
                           <option value={0}>Sunday</option>
                           <option value={1}>Monday</option>
@@ -895,153 +1028,152 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                           <option value={4}>Thursday</option>
                           <option value={5}>Friday</option>
                           <option value={6}>Saturday</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                        <input
+                        </Select>
+                      </Field>
+                      <Field label="Start Time">
+                        <Input
                           type="time"
                           value={scheduleForm.start_time}
                           onChange={(e) => setScheduleForm({ ...scheduleForm, start_time: e.target.value })}
-                          className="w-full p-2 border rounded-lg"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                        <input
+                      </Field>
+                      <Field label="End Time">
+                        <Input
                           type="time"
                           value={scheduleForm.end_time}
                           onChange={(e) => setScheduleForm({ ...scheduleForm, end_time: e.target.value })}
-                          className="w-full p-2 border rounded-lg"
                         />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Slot Duration (minutes)</label>
-                        <input
+                      </Field>
+                      <Field label="Slot Duration (minutes)">
+                        <Input
                           type="number"
                           value={scheduleForm.slot_duration_minutes}
                           onChange={(e) => setScheduleForm({ ...scheduleForm, slot_duration_minutes: Number(e.target.value) })}
-                          className="w-full p-2 border rounded-lg"
                         />
-                      </div>
-                      <div className="flex items-center">
+                      </Field>
+                      <label className="flex items-center gap-2 text-sm text-slate-300">
                         <input
                           type="checkbox"
                           checked={scheduleForm.is_available}
                           onChange={(e) => setScheduleForm({ ...scheduleForm, is_available: e.target.checked })}
-                          className="h-4 w-4 text-teal-600 border-gray-300 rounded"
+                          className="h-4 w-4 rounded border-white/20 bg-white/5 text-brand-500 focus:ring-brand-500/40"
                         />
-                        <label className="ml-2 text-sm text-gray-700">Available</label>
-                      </div>
+                        Available
+                      </label>
                     </div>
-                    <div className="mt-4 flex space-x-3">
-                      <button
-                        onClick={saveScheduleDay}
-                        className="flex-1 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700"
-                      >
+                    <div className="mt-5 flex gap-3">
+                      <Button variant="primary" fullWidth onClick={saveScheduleDay}>
                         Save
-                      </button>
-                      <button
-                        onClick={() => setEditingDay(null)}
-                        className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400"
-                      >
+                      </Button>
+                      <Button variant="secondary" fullWidth onClick={() => setEditingDay(null)}>
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
               </div>
             )}
-          </div>
+          </Card>
         )}
       </div>
 
       {/* Notes Modal */}
       {selectedAppointment && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-semibold mb-4">Add Medical Notes - {selectedAppointment.patient_name}</h3>
-            
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 p-4 backdrop-blur-sm">
+          <Card className="max-h-[90vh] w-full max-w-4xl overflow-y-auto p-6 animate-fade-in-up">
+            <div className="mb-5 flex items-center gap-2">
+              <PencilSquareIcon className="h-5 w-5 text-brand-300" />
+              <h3 className="font-display text-xl font-semibold text-white">
+                Add Medical Notes &mdash; {selectedAppointment.patient_name}
+              </h3>
+            </div>
+
             {/* Show Comprehensive EHR Report if encounter is linked */}
             {encounterDetails && (
               <div className="mb-6 space-y-4">
                 {/* Patient Summary */}
                 {encounterDetails.patient_summary && (
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h4 className="font-semibold text-blue-900 mb-3 flex items-center">
-                      � Patient Information
+                  <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-sky-200">
+                      <UserCircleIcon className="h-5 w-5" /> Patient Information
                     </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
-                      <div><strong>Name:</strong> {encounterDetails.patient_summary.patient_name}</div>
-                      <div><strong>Age:</strong> {encounterDetails.patient_summary.age}</div>
-                      <div><strong>Gender:</strong> {encounterDetails.patient_summary.gender}</div>
-                      <div><strong>Blood Type:</strong> {encounterDetails.patient_summary.blood_type}</div>
-                      <div><strong>Height:</strong> {encounterDetails.patient_summary.height}</div>
-                      <div><strong>Weight:</strong> {encounterDetails.patient_summary.weight}</div>
+                    <div className="grid grid-cols-2 gap-3 text-sm text-slate-300 md:grid-cols-3">
+                      <div><strong className="text-white">Name:</strong> {encounterDetails.patient_summary.patient_name}</div>
+                      <div><strong className="text-white">Age:</strong> {encounterDetails.patient_summary.age}</div>
+                      <div><strong className="text-white">Gender:</strong> {encounterDetails.patient_summary.gender}</div>
+                      <div><strong className="text-white">Blood Type:</strong> {encounterDetails.patient_summary.blood_type}</div>
+                      <div><strong className="text-white">Height:</strong> {encounterDetails.patient_summary.height}</div>
+                      <div><strong className="text-white">Weight:</strong> {encounterDetails.patient_summary.weight}</div>
                     </div>
                   </div>
                 )}
-                
+
                 {/* Allergies - CRITICAL */}
                 {encounterDetails.patient_summary?.known_allergies && encounterDetails.patient_summary.known_allergies.length > 0 && (
-                  <div className="p-4 bg-red-50 border-2 border-red-500 rounded-lg">
-                    <h4 className="font-semibold text-red-900 mb-3 flex items-center">
-                      ⚠️ ALLERGIES - CRITICAL
+                  <div className="rounded-xl border-2 border-rose-500/50 bg-rose-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-rose-200">
+                      <ExclamationTriangleIcon className="h-5 w-5" /> ALLERGIES - CRITICAL
                     </h4>
                     <div className="space-y-2">
                       {encounterDetails.patient_summary.known_allergies.map((allergy: any, idx: number) => (
-                        <div key={idx} className="text-sm bg-red-100 p-2 rounded">
-                          <strong>{allergy.allergen || allergy.name}:</strong> {allergy.reaction} 
-                          <span className="ml-2 text-red-700">(Severity: {allergy.severity})</span>
+                        <div key={idx} className="rounded-lg bg-rose-500/15 p-2 text-sm text-slate-200">
+                          <strong className="text-rose-100">{allergy.allergen || allergy.name}:</strong> {allergy.reaction}
+                          <span className="ml-2 text-rose-300">(Severity: {allergy.severity})</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                
+
                 {/* Current Medications */}
                 {encounterDetails.patient_summary?.current_medications && encounterDetails.patient_summary.current_medications.length > 0 && (
-                  <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                    <h4 className="font-semibold text-purple-900 mb-3">💊 Current Medications</h4>
+                  <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-brand-200">
+                      <BeakerIcon className="h-5 w-5" /> Current Medications
+                    </h4>
                     <div className="space-y-2">
                       {encounterDetails.patient_summary.current_medications.map((med: any, idx: number) => (
-                        <div key={idx} className="text-sm bg-purple-100 p-2 rounded">
-                          <strong>{med.medication || med.name}:</strong> {med.dosage} ({med.frequency})
+                        <div key={idx} className="rounded-lg bg-brand-500/15 p-2 text-sm text-slate-200">
+                          <strong className="text-white">{med.medication || med.name}:</strong> {med.dosage} ({med.frequency})
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                
+
                 {/* Chronic Conditions / Medical History */}
                 {encounterDetails.patient_summary?.chronic_conditions && encounterDetails.patient_summary.chronic_conditions.length > 0 && (
-                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <h4 className="font-semibold text-yellow-900 mb-3">📋 Medical History / Chronic Conditions</h4>
+                  <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-amber-200">
+                      <ClipboardDocumentListIcon className="h-5 w-5" /> Medical History / Chronic Conditions
+                    </h4>
                     <div className="space-y-2">
                       {encounterDetails.patient_summary.chronic_conditions.map((condition: any, idx: number) => (
-                        <div key={idx} className="text-sm bg-yellow-100 p-2 rounded">
-                          <strong>{condition.condition || condition.name}:</strong> {condition.status} 
-                          <span className="ml-2 text-gray-600">(Diagnosed: {condition.diagnosed_date})</span>
+                        <div key={idx} className="rounded-lg bg-amber-500/15 p-2 text-sm text-slate-200">
+                          <strong className="text-white">{condition.condition || condition.name}:</strong> {condition.status}
+                          <span className="ml-2 text-slate-400">(Diagnosed: {condition.diagnosed_date})</span>
                         </div>
                       ))}
                     </div>
                   </div>
                 )}
-                
+
                 {/* Recent Vital Signs */}
                 {encounterDetails.patient_summary?.vital_signs_history && encounterDetails.patient_summary.vital_signs_history.length > 0 && (
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <h4 className="font-semibold text-green-900 mb-3">💓 Recent Vital Signs</h4>
+                  <div className="rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-semibold text-emerald-200">
+                      <HeartIcon className="h-5 w-5" /> Recent Vital Signs
+                    </h4>
                     <div className="space-y-3">
                       {encounterDetails.patient_summary.vital_signs_history.slice(-3).map((vitals: any, idx: number) => (
-                        <div key={idx} className="text-sm bg-green-100 p-2 rounded">
-                          <div className="font-medium mb-1">Record {idx + 1} - {vitals.recorded_at}</div>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        <div key={idx} className="rounded-lg bg-emerald-500/15 p-2 text-sm text-slate-200">
+                          <div className="mb-1 font-medium text-white">Record {idx + 1} - {vitals.recorded_at}</div>
+                          <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                             {vitals.blood_pressure_systolic && (
                               <div>BP: {vitals.blood_pressure_systolic}/{vitals.blood_pressure_diastolic}</div>
                             )}
                             {vitals.heart_rate && <div>HR: {vitals.heart_rate} bpm</div>}
-                            {vitals.temperature && <div>Temp: {vitals.temperature}°F</div>}
+                            {vitals.temperature && <div>Temp: {vitals.temperature}&deg;F</div>}
                             {vitals.weight && <div>Weight: {vitals.weight} kg</div>}
                           </div>
                         </div>
@@ -1049,144 +1181,138 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
                     </div>
                   </div>
                 )}
-                
+
                 {/* Chief Complaint & AI Report */}
-                <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <h4 className="font-semibold text-gray-900 mb-2">📝 Chief Complaint</h4>
-                  <p className="text-sm">{encounterDetails.chief_complaint}</p>
-                  
+                <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-white">
+                    <DocumentTextIcon className="h-5 w-5 text-slate-400" /> Chief Complaint
+                  </h4>
+                  <p className="text-sm text-slate-300">{encounterDetails.chief_complaint}</p>
+
                   {encounterDetails.ai_preliminary_report && (
                     <div className="mt-3">
-                      <h4 className="font-semibold text-gray-900 mb-2">🤖 AI Preliminary Assessment</h4>
-                      <pre className="text-xs bg-white p-3 rounded border whitespace-pre-wrap">{encounterDetails.ai_preliminary_report}</pre>
+                      <h4 className="mb-2 flex items-center gap-2 font-semibold text-white">
+                        <SparklesIcon className="h-5 w-5 text-brand-300" /> AI Preliminary Assessment
+                      </h4>
+                      <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 text-xs text-slate-300">{encounterDetails.ai_preliminary_report}</pre>
                     </div>
                   )}
-                  
+
                   {encounterDetails.assessment && (
                     <div className="mt-3">
-                      <h4 className="font-semibold text-gray-900 mb-2">📋 Clinical Assessment</h4>
-                      <pre className="text-xs bg-white p-3 rounded border whitespace-pre-wrap">{encounterDetails.assessment}</pre>
+                      <h4 className="mb-2 flex items-center gap-2 font-semibold text-white">
+                        <ClipboardDocumentListIcon className="h-5 w-5 text-slate-400" /> Clinical Assessment
+                      </h4>
+                      <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 text-xs text-slate-300">{encounterDetails.assessment}</pre>
                     </div>
                   )}
                 </div>
               </div>
             )}
-            
+
             {/* Notes Input Form */}
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Clinical Notes</label>
-                <textarea
-                  className="w-full p-2 border rounded-lg"
+              <Field label="Clinical Notes">
+                <Textarea
                   rows={4}
                   value={notes.note}
                   onChange={(e) => setNotes({ ...notes, note: e.target.value })}
                   placeholder="Enter clinical observations and notes..."
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
-                <input
+              </Field>
+              <Field label="Diagnosis">
+                <Input
                   type="text"
-                  className="w-full p-2 border rounded-lg"
                   value={notes.diagnosis}
                   onChange={(e) => setNotes({ ...notes, diagnosis: e.target.value })}
                   placeholder="Enter diagnosis..."
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prescription</label>
-                <textarea
-                  className="w-full p-2 border rounded-lg"
+              </Field>
+              <Field label="Prescription">
+                <Textarea
                   rows={3}
                   value={notes.prescription}
                   onChange={(e) => setNotes({ ...notes, prescription: e.target.value })}
                   placeholder="Enter prescription details..."
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Follow-up Date</label>
-                <input
+              </Field>
+              <Field label="Follow-up Date">
+                <Input
                   type="date"
-                  className="w-full p-2 border rounded-lg"
                   value={notes.follow_up_date}
                   onChange={(e) => setNotes({ ...notes, follow_up_date: e.target.value })}
                 />
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => addAppointmentNotes(selectedAppointment.id)}
-                  className="flex-1 bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700"
-                >
+              </Field>
+              <div className="flex gap-3">
+                <Button variant="primary" fullWidth onClick={() => addAppointmentNotes(selectedAppointment.id)}>
                   Save Notes
-                </button>
-                <button
+                </Button>
+                <Button
+                  variant="secondary"
+                  fullWidth
                   onClick={() => {
                     setSelectedAppointment(null);
                     setNotes({ note: '', diagnosis: '', prescription: '', follow_up_date: '' });
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Detailed Encounter Modal */}
       {detailedEncounter && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 max-w-6xl w-full max-h-[95vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/70 p-4 backdrop-blur-sm">
+          <Card className="max-h-[95vh] w-full max-w-6xl overflow-y-auto p-6 animate-fade-in-up">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-800">Encounter Details</h3>
-              <button
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="font-display text-2xl font-bold text-white">Encounter Details</h3>
+              <IconButton
+                label="Close"
                 onClick={() => {
                   setDetailedEncounter(null);
                   setPatientInfo(null);
                   setPatientEhr(null);
                   setEncounterNote('');
                 }}
-                className="text-gray-500 hover:text-gray-700"
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                <XMarkIcon className="h-6 w-6" />
+              </IconButton>
             </div>
 
             {/* Patient Summary Section */}
             {patientInfo && (
-              <div className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-lg mb-6 shadow-sm">
-                <h4 className="font-bold text-blue-900 mb-4 flex items-center text-xl">
-                  👤 Patient Summary
+              <div className="mb-6 rounded-xl border border-sky-400/30 bg-sky-500/10 p-5">
+                <h4 className="mb-4 flex items-center gap-2 font-display text-lg font-bold text-sky-200">
+                  <UserCircleIcon className="h-6 w-6" /> Patient Summary
                 </h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-white p-3 rounded-lg shadow-sm">
-                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Name</p>
-                    <p className="text-sm font-bold text-gray-800">{patientInfo.name}</p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Name</p>
+                    <p className="text-sm font-bold text-white">{patientInfo.name}</p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg shadow-sm">
-                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Age</p>
-                    <p className="text-sm font-bold text-gray-800">{patientInfo.age} years</p>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Age</p>
+                    <p className="text-sm font-bold text-white">{patientInfo.age} years</p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg shadow-sm">
-                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Gender</p>
-                    <p className="text-sm font-bold text-gray-800">{patientInfo.gender}</p>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Gender</p>
+                    <p className="text-sm font-bold text-white">{patientInfo.gender}</p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg shadow-sm">
-                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Blood Type</p>
-                    <p className="text-sm font-bold text-gray-800">{patientEhr?.blood_type || 'Unknown'}</p>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Blood Type</p>
+                    <p className="text-sm font-bold text-white">{patientEhr?.blood_type || 'Unknown'}</p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg shadow-sm">
-                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Phone</p>
-                    <p className="text-sm font-bold text-gray-800">{patientInfo.phone}</p>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Phone</p>
+                    <p className="text-sm font-bold text-white">{patientInfo.phone}</p>
                   </div>
-                  <div className="bg-white p-3 rounded-lg shadow-sm">
-                    <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Address</p>
-                    <p className="text-sm font-bold text-gray-800">{patientInfo.address}</p>
+                  <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                    <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Address</p>
+                    <p className="text-sm font-bold text-white">{patientInfo.address}</p>
                   </div>
                 </div>
               </div>
@@ -1194,42 +1320,44 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
             {/* Latest Vital Signs */}
             {patientEhr && patientEhr.vital_signs && patientEhr.vital_signs.length > 0 && (
-              <div className="p-5 bg-green-50 border-2 border-green-300 rounded-lg mb-6">
-                <h4 className="font-bold text-green-900 mb-3 text-lg">💓 Latest Vital Signs</h4>
+              <div className="mb-6 rounded-xl border border-emerald-400/30 bg-emerald-500/10 p-5">
+                <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-emerald-200">
+                  <HeartIcon className="h-5 w-5" /> Latest Vital Signs
+                </h4>
                 {(() => {
                   const latestVitals = patientEhr.vital_signs[patientEhr.vital_signs.length - 1];
                   return (
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
                       {latestVitals.blood_pressure_systolic && (
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">BP</p>
-                          <p className="text-sm font-bold text-gray-800">
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">BP</p>
+                          <p className="text-sm font-bold text-white">
                             {latestVitals.blood_pressure_systolic}/{latestVitals.blood_pressure_diastolic}
                           </p>
                         </div>
                       )}
                       {latestVitals.heart_rate && (
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">HR</p>
-                          <p className="text-sm font-bold text-gray-800">{latestVitals.heart_rate} bpm</p>
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">HR</p>
+                          <p className="text-sm font-bold text-white">{latestVitals.heart_rate} bpm</p>
                         </div>
                       )}
                       {latestVitals.temperature && (
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Temp</p>
-                          <p className="text-sm font-bold text-gray-800">{latestVitals.temperature}°F</p>
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Temp</p>
+                          <p className="text-sm font-bold text-white">{latestVitals.temperature}&deg;F</p>
                         </div>
                       )}
                       {latestVitals.weight && (
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Weight</p>
-                          <p className="text-sm font-bold text-gray-800">{latestVitals.weight} kg</p>
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Weight</p>
+                          <p className="text-sm font-bold text-white">{latestVitals.weight} kg</p>
                         </div>
                       )}
                       {patientEhr.height && (
-                        <div className="bg-white p-3 rounded-lg shadow-sm">
-                          <p className="text-xs text-gray-500 uppercase font-semibold mb-1">Height</p>
-                          <p className="text-sm font-bold text-gray-800">{patientEhr.height}</p>
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                          <p className="mb-1 text-xs font-semibold uppercase text-slate-500">Height</p>
+                          <p className="text-sm font-bold text-white">{patientEhr.height}</p>
                         </div>
                       )}
                     </div>
@@ -1240,16 +1368,18 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
             {/* Medical Information */}
             {patientEhr && (
-              <div className="space-y-4 mb-6">
+              <div className="mb-6 space-y-4">
 
                 {/* Current Medications */}
                 {patientEhr.medications && patientEhr.medications.length > 0 && (
-                  <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
-                    <h4 className="font-bold text-purple-900 mb-3 text-lg">💊 Current Medications</h4>
+                  <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-brand-200">
+                      <BeakerIcon className="h-5 w-5" /> Current Medications
+                    </h4>
                     <div className="space-y-2">
                       {patientEhr.medications.map((med: any, idx: number) => (
-                        <div key={idx} className="text-sm bg-purple-100 p-2 rounded">
-                          <strong>{med.medication || med.name || 'Unknown'}:</strong>{' '}
+                        <div key={idx} className="rounded-lg bg-brand-500/15 p-2 text-sm text-slate-200">
+                          <strong className="text-white">{med.medication || med.name || 'Unknown'}:</strong>{' '}
                           {med.dosage || 'N/A'} ({med.frequency || 'N/A'})
                         </div>
                       ))}
@@ -1259,17 +1389,17 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* ALLERGIES - CRITICAL */}
                 {patientEhr.allergies && patientEhr.allergies.length > 0 && (
-                  <div className="p-4 bg-red-50 border-2 border-red-500 rounded-lg">
-                    <h4 className="font-bold text-red-900 mb-3 flex items-center text-lg">
-                      ⚠️ ALLERGIES - CRITICAL
+                  <div className="rounded-xl border-2 border-rose-500/50 bg-rose-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-rose-200">
+                      <ExclamationTriangleIcon className="h-5 w-5" /> ALLERGIES - CRITICAL
                     </h4>
                     <div className="space-y-2">
                       {patientEhr.allergies.map((allergy: any, idx: number) => (
-                        <div key={idx} className="text-sm bg-red-100 p-3 rounded border border-red-300">
-                          <strong className="text-red-900">{allergy.allergen || allergy.name || 'Unknown'}:</strong>{' '}
-                          <span className="text-red-800">{allergy.reaction || 'N/A'}</span>
+                        <div key={idx} className="rounded-lg border border-rose-400/30 bg-rose-500/15 p-3 text-sm text-slate-200">
+                          <strong className="text-rose-100">{allergy.allergen || allergy.name || 'Unknown'}:</strong>{' '}
+                          <span className="text-rose-200">{allergy.reaction || 'N/A'}</span>
                           {allergy.severity && (
-                            <span className="ml-2 px-2 py-0.5 bg-red-200 text-red-900 rounded text-xs font-bold">
+                            <span className="ml-2 rounded bg-rose-500/30 px-2 py-0.5 text-xs font-bold text-rose-100">
                               Severity: {allergy.severity}
                             </span>
                           )}
@@ -1281,15 +1411,17 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
                 {/* Chronic Conditions / Medical History */}
                 {patientEhr.chronic_conditions && patientEhr.chronic_conditions.length > 0 && (
-                  <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
-                    <h4 className="font-bold text-yellow-900 mb-3 text-lg">📋 Medical History / Chronic Conditions</h4>
+                  <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
+                    <h4 className="mb-3 flex items-center gap-2 font-display text-lg font-bold text-amber-200">
+                      <ClipboardDocumentListIcon className="h-5 w-5" /> Medical History / Chronic Conditions
+                    </h4>
                     <div className="space-y-2">
                       {patientEhr.chronic_conditions.map((condition: any, idx: number) => (
-                        <div key={idx} className="text-sm bg-yellow-100 p-2 rounded">
-                          <strong>{condition.condition || condition.name || 'Unknown'}:</strong>{' '}
+                        <div key={idx} className="rounded-lg bg-amber-500/15 p-2 text-sm text-slate-200">
+                          <strong className="text-white">{condition.condition || condition.name || 'Unknown'}:</strong>{' '}
                           {condition.status || 'Active'}
                           {condition.diagnosed_date && (
-                            <span className="ml-2 text-gray-600">(Diagnosed: {condition.diagnosed_date})</span>
+                            <span className="ml-2 text-slate-400">(Diagnosed: {condition.diagnosed_date})</span>
                           )}
                         </div>
                       ))}
@@ -1300,25 +1432,22 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
             )}
 
             {/* Current Encounter Details */}
-            <div className="space-y-4 mb-6 border-t-4 border-teal-500 pt-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">📝 Current Encounter</h3>
-              
-              <div className="p-4 bg-gray-50 border rounded-lg">
-                <div className="flex justify-between items-start mb-2">
+            <div className="mb-6 space-y-4 border-t border-brand-400/40 pt-6">
+              <h3 className="mb-4 flex items-center gap-2 font-display text-xl font-bold text-white">
+                <DocumentTextIcon className="h-6 w-6 text-brand-300" /> Current Encounter
+              </h3>
+
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="mb-2 flex items-start justify-between gap-3">
                   <div>
-                    <h4 className="font-semibold text-gray-800 text-lg">Chief Complaint</h4>
-                    <p className="text-gray-700 mt-1">{detailedEncounter.chief_complaint}</p>
+                    <h4 className="font-display text-lg font-semibold text-white">Chief Complaint</h4>
+                    <p className="mt-1 text-slate-300">{detailedEncounter.chief_complaint}</p>
                   </div>
-                  <span className={`px-3 py-1 text-xs font-bold rounded-full ${
-                    detailedEncounter.severity === 'emergency' ? 'bg-red-100 text-red-800' :
-                    detailedEncounter.severity === 'severe' ? 'bg-orange-100 text-orange-800' :
-                    detailedEncounter.severity === 'moderate' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-green-100 text-green-800'
-                  }`}>
+                  <Badge tone={severityTone(detailedEncounter.severity)}>
                     {detailedEncounter.severity?.toUpperCase()}
-                  </span>
+                  </Badge>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-slate-400">
                   {new Date(detailedEncounter.encounter_date).toLocaleString('en-US', {
                     year: 'numeric',
                     month: 'long',
@@ -1331,11 +1460,13 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Symptoms */}
               {detailedEncounter.symptoms && detailedEncounter.symptoms.length > 0 && (
-                <div className="p-4 bg-teal-50 border-2 border-teal-200 rounded-lg">
-                  <h4 className="font-semibold text-teal-900 mb-2">🩺 Symptoms</h4>
+                <div className="rounded-xl border border-accent-400/30 bg-accent-500/10 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-accent-200">
+                    <HeartIcon className="h-5 w-5" /> Symptoms
+                  </h4>
                   <div className="flex flex-wrap gap-2">
                     {detailedEncounter.symptoms.map((symptom: any, idx: number) => (
-                      <span key={idx} className="px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium">
+                      <span key={idx} className="rounded-full bg-accent-500/20 px-3 py-1 text-sm font-medium text-accent-100">
                         {typeof symptom === 'string' ? symptom : symptom.symptom || symptom.name || JSON.stringify(symptom)}
                       </span>
                     ))}
@@ -1345,37 +1476,39 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Encounter Vital Signs */}
               {detailedEncounter.vital_signs && Object.keys(detailedEncounter.vital_signs).length > 0 && (
-                <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
-                  <h4 className="font-semibold text-yellow-900 mb-2">🩺 Encounter Vital Signs</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="rounded-xl border border-amber-400/30 bg-amber-500/10 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-amber-200">
+                    <HeartIcon className="h-5 w-5" /> Encounter Vital Signs
+                  </h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm text-slate-200 md:grid-cols-4">
                     {detailedEncounter.vital_signs.blood_pressure_systolic && (
-                      <div className="bg-white p-2 rounded">
-                        <span className="font-semibold">BP:</span> {detailedEncounter.vital_signs.blood_pressure_systolic}/{detailedEncounter.vital_signs.blood_pressure_diastolic} mmHg
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
+                        <span className="font-semibold text-white">BP:</span> {detailedEncounter.vital_signs.blood_pressure_systolic}/{detailedEncounter.vital_signs.blood_pressure_diastolic} mmHg
                       </div>
                     )}
                     {detailedEncounter.vital_signs.heart_rate && (
-                      <div className="bg-white p-2 rounded">
-                        <span className="font-semibold">Heart Rate:</span> {detailedEncounter.vital_signs.heart_rate} bpm
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
+                        <span className="font-semibold text-white">Heart Rate:</span> {detailedEncounter.vital_signs.heart_rate} bpm
                       </div>
                     )}
                     {detailedEncounter.vital_signs.temperature && (
-                      <div className="bg-white p-2 rounded">
-                        <span className="font-semibold">Temperature:</span> {detailedEncounter.vital_signs.temperature}°F
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
+                        <span className="font-semibold text-white">Temperature:</span> {detailedEncounter.vital_signs.temperature}&deg;F
                       </div>
                     )}
                     {detailedEncounter.vital_signs.respiratory_rate && (
-                      <div className="bg-white p-2 rounded">
-                        <span className="font-semibold">Respiratory:</span> {detailedEncounter.vital_signs.respiratory_rate} /min
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
+                        <span className="font-semibold text-white">Respiratory:</span> {detailedEncounter.vital_signs.respiratory_rate} /min
                       </div>
                     )}
                     {detailedEncounter.vital_signs.oxygen_saturation && (
-                      <div className="bg-white p-2 rounded">
-                        <span className="font-semibold">SpO2:</span> {detailedEncounter.vital_signs.oxygen_saturation}%
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
+                        <span className="font-semibold text-white">SpO2:</span> {detailedEncounter.vital_signs.oxygen_saturation}%
                       </div>
                     )}
                     {detailedEncounter.vital_signs.weight && (
-                      <div className="bg-white p-2 rounded">
-                        <span className="font-semibold">Weight:</span> {detailedEncounter.vital_signs.weight} kg
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-2">
+                        <span className="font-semibold text-white">Weight:</span> {detailedEncounter.vital_signs.weight} kg
                       </div>
                     )}
                   </div>
@@ -1384,9 +1517,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* AI Preliminary Report */}
               {detailedEncounter.ai_preliminary_report && (
-                <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-                  <h4 className="font-bold text-blue-900 mb-2 text-lg">🤖 AI Preliminary Assessment</h4>
-                  <pre className="text-gray-700 whitespace-pre-wrap text-sm font-sans bg-white p-3 rounded border border-blue-100">
+                <div className="rounded-xl border border-sky-400/30 bg-sky-500/10 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-sky-200">
+                    <SparklesIcon className="h-5 w-5" /> AI Preliminary Assessment
+                  </h4>
+                  <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 font-sans text-sm text-slate-300">
                     {detailedEncounter.ai_preliminary_report}
                   </pre>
                 </div>
@@ -1394,9 +1529,11 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Assessment */}
               {detailedEncounter.assessment && (
-                <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
-                  <h4 className="font-bold text-purple-900 mb-2 text-lg">📋 Clinical Assessment</h4>
-                  <pre className="text-gray-700 whitespace-pre-wrap text-sm font-sans bg-white p-3 rounded border border-purple-100">
+                <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-display text-lg font-bold text-brand-200">
+                    <ClipboardDocumentListIcon className="h-5 w-5" /> Clinical Assessment
+                  </h4>
+                  <pre className="whitespace-pre-wrap rounded-lg border border-white/10 bg-ink-900/50 p-3 font-sans text-sm text-slate-300">
                     {detailedEncounter.assessment}
                   </pre>
                 </div>
@@ -1404,83 +1541,83 @@ const DoctorDashboard: React.FC<DoctorDashboardProps> = ({ token, onLogout }) =>
 
               {/* Recommended Specialization */}
               {detailedEncounter.recommended_specialization && (
-                <div className="p-4 bg-purple-50 border-2 border-purple-200 rounded-lg">
-                  <h4 className="font-semibold text-purple-900 mb-2">🏥 Recommended Specialization</h4>
-                  <span className="px-3 py-1 bg-purple-200 text-purple-900 rounded-lg text-sm font-bold">
+                <div className="rounded-xl border border-brand-400/30 bg-brand-500/10 p-4">
+                  <h4 className="mb-2 font-semibold text-brand-200">Recommended Specialization</h4>
+                  <Badge tone="brand">
                     {detailedEncounter.recommended_specialization.replace('_', ' ').toUpperCase()}
-                  </span>
+                  </Badge>
                 </div>
               )}
             </div>
 
             {/* Doctor's Note Section */}
-            <div className="border-t-4 border-teal-500 pt-6">
-              <h4 className="font-bold text-gray-800 mb-3 text-xl">✍️ Doctor's Note</h4>
-              
+            <div className="border-t border-brand-400/40 pt-6">
+              <h4 className="mb-3 flex items-center gap-2 font-display text-xl font-bold text-white">
+                <PencilSquareIcon className="h-6 w-6 text-brand-300" /> Doctor's Note
+              </h4>
+
               {/* Show existing diagnosis and treatment plan if available */}
               {(detailedEncounter.diagnosis || detailedEncounter.treatment_plan || detailedEncounter.doctor_notes) && (
-                <div className="mb-4 p-4 bg-gray-50 border-2 border-gray-300 rounded-lg">
-                  <h5 className="font-semibold text-gray-700 mb-2">Previous Documentation:</h5>
+                <div className="mb-4 rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                  <h5 className="mb-2 font-semibold text-slate-300">Previous Documentation:</h5>
                   {detailedEncounter.diagnosis && (
                     <div className="mb-2">
-                      <span className="font-semibold text-gray-700">Diagnosis:</span>
-                      <p className="text-gray-700 mt-1">{detailedEncounter.diagnosis}</p>
+                      <span className="font-semibold text-slate-200">Diagnosis:</span>
+                      <p className="mt-1 text-slate-300">{detailedEncounter.diagnosis}</p>
                     </div>
                   )}
                   {detailedEncounter.treatment_plan && (
                     <div className="mb-2">
-                      <span className="font-semibold text-gray-700">Treatment Plan:</span>
-                      <p className="text-gray-700 mt-1">{detailedEncounter.treatment_plan}</p>
+                      <span className="font-semibold text-slate-200">Treatment Plan:</span>
+                      <p className="mt-1 text-slate-300">{detailedEncounter.treatment_plan}</p>
                     </div>
                   )}
                   {detailedEncounter.doctor_notes && (
                     <div className="mb-2">
-                      <span className="font-semibold text-gray-700">Doctor's Notes:</span>
-                      <p className="text-gray-700 mt-1">{detailedEncounter.doctor_notes}</p>
+                      <span className="font-semibold text-slate-200">Doctor's Notes:</span>
+                      <p className="mt-1 text-slate-300">{detailedEncounter.doctor_notes}</p>
                     </div>
                   )}
                 </div>
               )}
-              
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Add/Update Doctor's Note:
-              </label>
-              <textarea
-                className="w-full p-3 border-2 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                rows={6}
-                value={encounterNote}
-                onChange={(e) => setEncounterNote(e.target.value)}
-                placeholder="Add your clinical observations, diagnosis, treatment plan, and recommendations here..."
-              />
-              <div className="mt-4 flex space-x-3">
-                <button
-                  onClick={saveEncounterNote}
+
+              <Field label="Add/Update Doctor's Note:">
+                <Textarea
+                  rows={6}
+                  value={encounterNote}
+                  onChange={(e) => setEncounterNote(e.target.value)}
+                  placeholder="Add your clinical observations, diagnosis, treatment plan, and recommendations here..."
+                />
+              </Field>
+              <div className="mt-4 flex gap-3">
+                <Button
+                  variant="primary"
+                  fullWidth
+                  loading={savingNote}
                   disabled={savingNote}
-                  className={`flex-1 py-3 rounded-lg transition font-semibold ${
-                    savingNote 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-teal-600 hover:bg-teal-700'
-                  } text-white`}
+                  leftIcon={savingNote ? undefined : <CheckIcon className="h-4 w-4" />}
+                  onClick={saveEncounterNote}
                 >
-                  {savingNote ? 'Saving...' : '💾 Save Doctor Note'}
-                </button>
-                <button
+                  {savingNote ? 'Saving...' : 'Save Doctor Note'}
+                </Button>
+                <Button
+                  variant="secondary"
+                  fullWidth
                   onClick={() => {
                     setDetailedEncounter(null);
                     setPatientInfo(null);
                     setPatientEhr(null);
                     setEncounterNote('');
                   }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-lg hover:bg-gray-400 font-semibold"
                 >
                   Close
-                </button>
+                </Button>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
-    </div>
+    </AppLayout>
   );
 };
 

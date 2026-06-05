@@ -1,6 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeftIcon, PaperAirplaneIcon, MicrophoneIcon, SpeakerWaveIcon, SpeakerXMarkIcon } from '@heroicons/react/24/outline';
+import {
+  PaperAirplaneIcon,
+  MicrophoneIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+  SparklesIcon,
+  ShieldCheckIcon,
+  ChatBubbleLeftRightIcon,
+} from '@heroicons/react/24/outline';
+import { Button, IconButton, Badge, Avatar, Spinner, cn } from '../lib/ui';
+import AppLayout from './layout/AppLayout';
 
 interface MedicalChatProps {
   token: string;
@@ -45,7 +55,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
       if (response.ok) {
         const data = await response.json();
         setSessionId(data.session_id);
-        
+
         // Add welcome message
         setMessages([{
           id: '1',
@@ -69,24 +79,24 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
 
   const speakText = (text: string) => {
     if (!voiceEnabled) return;
-    
+
     // Stop any ongoing speech
     window.speechSynthesis.cancel();
-    
+
     setIsSpeaking(true);
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 0.9;
     utterance.pitch = 1;
     utterance.volume = 1;
-    
+
     utterance.onend = () => {
       setIsSpeaking(false);
     };
-    
+
     utterance.onerror = () => {
       setIsSpeaking(false);
     };
-    
+
     window.speechSynthesis.speak(utterance);
   };
 
@@ -124,7 +134,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
             message: inputMessage,
             sender: 'user'
         })
@@ -132,7 +142,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
 
       if (response.ok) {
         const data = await response.json();
-        
+
         // Use the actual AI response from the backend
         if (data.ai_response) {
           const aiMessage: Message = {
@@ -143,7 +153,7 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
           };
 
           setMessages(prev => [...prev, aiMessage]);
-          
+
           // Speak the response if voice is enabled
           if (voiceEnabled) {
             speakText(aiMessage.text);
@@ -184,152 +194,209 @@ const MedicalChat: React.FC<MedicalChatProps> = ({ token, user, onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white shadow border-b-4 border-blue-500">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="mr-2 text-gray-500 hover:text-gray-700"
-              >
-                <ArrowLeftIcon className="h-6 w-6" />
-              </button>
-              <img 
-                src="/mero-daktar-logo.png" 
-                alt="MeroDaktar Logo" 
-                className="h-10 w-10"
-              />
-              <div>
-                <h1 className="text-xl font-bold text-blue-600">AI Medical Chat</h1>
-                <p className="text-xs text-gray-500">Powered by MeroDaktar AI</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={toggleVoice}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition ${
-                  voiceEnabled 
-                    ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-                title={voiceEnabled ? 'Voice ON - AI will speak' : 'Voice OFF'}
-              >
-                {voiceEnabled ? (
-                  <>
-                    <SpeakerWaveIcon className="h-5 w-5" />
-                    <span className="text-sm font-medium">🎙️ Voice ON</span>
-                  </>
-                ) : (
-                  <>
-                    <SpeakerXMarkIcon className="h-5 w-5" />
-                    <span className="text-sm font-medium">Voice OFF</span>
-                  </>
+    <AppLayout
+      role="patient"
+      user={user}
+      onLogout={onLogout}
+      title="AI Chat"
+      fullBleed
+      actions={
+        <button
+          onClick={toggleVoice}
+          title={voiceEnabled ? 'Voice ON - AI will speak' : 'Voice OFF'}
+          className={cn(
+            'inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition',
+            voiceEnabled
+              ? 'border-emerald-400/30 bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/25'
+              : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20 hover:bg-white/10'
+          )}
+        >
+          {voiceEnabled ? (
+            <>
+              <SpeakerWaveIcon className="h-4 w-4" />
+              <span>Voice ON</span>
+            </>
+          ) : (
+            <>
+              <SpeakerXMarkIcon className="h-4 w-4" />
+              <span>Voice OFF</span>
+            </>
+          )}
+        </button>
+      }
+    >
+      <div className="flex min-h-0 flex-1 flex-col animate-fade-in-up">
+        {/* Intro / context bar */}
+        <div className="border-b border-white/10 bg-ink-900/40 px-4 py-4 backdrop-blur-xl sm:px-6 lg:px-10">
+          <div className="mx-auto flex w-full max-w-4xl items-center gap-4">
+            <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-brand text-white shadow-glow-sm">
+              <SparklesIcon className="h-6 w-6" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="font-display text-lg font-bold text-white">AI Medical Assistant</h2>
+                <Badge tone="brand">
+                  <SparklesIcon className="h-3 w-3" />
+                  Powered by MeroDaktar
+                </Badge>
+                {voiceEnabled && (
+                  <Badge tone="emerald">
+                    <SpeakerWaveIcon className="h-3 w-3" />
+                    Voice mode
+                  </Badge>
                 )}
-              </button>
-              <div className="text-sm text-gray-500">
-                {user?.full_name}
               </div>
+              <p className="mt-0.5 truncate text-sm text-slate-400">
+                Describe your symptoms for preliminary guidance, {user?.full_name || 'there'}.
+              </p>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden sm:inline-flex"
+              onClick={() => navigate('/dashboard')}
+            >
+              Back to dashboard
+            </Button>
           </div>
         </div>
-      </header>
 
-      {/* Chat Container */}
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
-        <div className="bg-white rounded-lg shadow-lg h-[calc(100vh-200px)] flex flex-col">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[70%] rounded-lg p-4 ${
-                    message.sender === 'user'
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{message.text}</p>
-                  {message.urgency && (
-                    <p className={`text-xs mt-2 ${
-                      message.sender === 'user' ? 'text-blue-100' : 
-                      message.urgency === 'emergency' ? 'text-red-600 font-bold' :
-                      message.urgency === 'moderate' ? 'text-yellow-600 font-medium' :
-                      'text-green-600'
-                    }`}>
-                      Urgency Level: {message.urgency.toUpperCase()}
-                    </p>
-                  )}
-                  <p className={`text-xs mt-1 ${
-                    message.sender === 'user' ? 'text-blue-100' : 'text-gray-500'
-                  }`}>
-                    {message.timestamp.toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 rounded-lg p-4">
-                  <div className="flex space-x-2">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        {/* Chat surface */}
+        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 sm:px-6 lg:px-10">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-glass backdrop-blur-xl">
+            {/* Messages */}
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
+              {messages.map((message) => {
+                const isUser = message.sender === 'user';
+                return (
+                  <div
+                    key={message.id}
+                    className={cn('flex animate-fade-in-up gap-3', isUser ? 'justify-end' : 'justify-start')}
+                  >
+                    {!isUser && (
+                      <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow-sm">
+                        <SparklesIcon className="h-5 w-5" />
+                      </span>
+                    )}
+                    <div
+                      className={cn(
+                        'max-w-[78%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm',
+                        isUser
+                          ? 'rounded-br-md bg-gradient-brand text-white'
+                          : 'rounded-bl-md border border-white/10 bg-white/[0.05] text-slate-100'
+                      )}
+                    >
+                      <p className="whitespace-pre-wrap">{message.text}</p>
+                      {message.urgency && (
+                        <p
+                          className={cn(
+                            'mt-2 text-xs font-semibold uppercase tracking-wide',
+                            isUser
+                              ? 'text-white/80'
+                              : message.urgency === 'emergency'
+                                ? 'text-rose-300'
+                                : message.urgency === 'moderate'
+                                  ? 'text-amber-300'
+                                  : 'text-emerald-300'
+                          )}
+                        >
+                          Urgency Level: {message.urgency.toUpperCase()}
+                        </p>
+                      )}
+                      <p className={cn('mt-1.5 text-[11px]', isUser ? 'text-white/70' : 'text-slate-500')}>
+                        {message.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
+                    {isUser && (
+                      <Avatar name={user?.full_name} className="mt-0.5 h-9 w-9 shrink-0" />
+                    )}
+                  </div>
+                );
+              })}
+              {isLoading && (
+                <div className="flex animate-fade-in justify-start gap-3">
+                  <span className="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow-sm">
+                    <SparklesIcon className="h-5 w-5" />
+                  </span>
+                  <div className="rounded-2xl rounded-bl-md border border-white/10 bg-white/[0.05] px-4 py-3.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-brand-300" />
+                      <span
+                        className="h-2 w-2 animate-bounce rounded-full bg-brand-300"
+                        style={{ animationDelay: '0.15s' }}
+                      />
+                      <span
+                        className="h-2 w-2 animate-bounce rounded-full bg-brand-300"
+                        style={{ animationDelay: '0.3s' }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Input Area */}
-          <div className="border-t p-4">
-            <div className="flex space-x-2">
-              <button
-                onClick={handleVoiceInput}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-                title="Voice input (coming soon)"
-              >
-                <MicrophoneIcon className="h-6 w-6" />
-              </button>
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Describe your symptoms..."
-                className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              {isSpeaking && (
-                <button
-                  onClick={stopSpeaking}
-                  className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 animate-pulse"
-                  title="Stop speaking"
-                >
-                  <SpeakerXMarkIcon className="h-6 w-6" />
-                </button>
               )}
-              <button
-                onClick={handleSendMessage}
-                disabled={isLoading || !inputMessage.trim()}
-                className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                <PaperAirplaneIcon className="h-6 w-6" />
-              </button>
+              <div ref={messagesEndRef} />
             </div>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              {voiceEnabled && <span className="text-green-600 font-medium">🔊 Voice mode enabled - AI responses will be spoken. </span>}
-              This is not a replacement for professional medical advice. Always consult a healthcare provider.
-            </p>
+
+            {/* Input Area */}
+            <div className="border-t border-white/10 bg-ink-900/40 p-4 backdrop-blur-xl">
+              <div className="flex items-center gap-2">
+                <IconButton
+                  label="Voice input (coming soon)"
+                  onClick={handleVoiceInput}
+                  className="shrink-0"
+                >
+                  <MicrophoneIcon className="h-5 w-5" />
+                </IconButton>
+                <div className="relative flex-1">
+                  <ChatBubbleLeftRightIcon className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    placeholder="Describe your symptoms..."
+                    className="w-full rounded-xl border border-white/10 bg-white/5 py-3 pl-11 pr-4 text-slate-100 transition placeholder:text-slate-500 focus:border-brand-400/60 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
+                    disabled={isLoading}
+                  />
+                </div>
+                {isSpeaking && (
+                  <Button
+                    variant="danger"
+                    onClick={stopSpeaking}
+                    title="Stop speaking"
+                    className="shrink-0 animate-pulse px-3"
+                    leftIcon={<SpeakerXMarkIcon className="h-5 w-5" />}
+                  >
+                    Stop
+                  </Button>
+                )}
+                <Button
+                  variant="primary"
+                  onClick={handleSendMessage}
+                  disabled={isLoading || !inputMessage.trim()}
+                  className="shrink-0 px-4"
+                  aria-label="Send message"
+                >
+                  {isLoading ? (
+                    <Spinner className="h-5 w-5" />
+                  ) : (
+                    <PaperAirplaneIcon className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
+              <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-xs text-slate-500">
+                <ShieldCheckIcon className="h-4 w-4 shrink-0 text-slate-500" />
+                {voiceEnabled && (
+                  <span className="font-medium text-emerald-300">
+                    Voice mode enabled - AI responses will be spoken.{' '}
+                  </span>
+                )}
+                This is not a replacement for professional medical advice. Always consult a healthcare provider.
+              </p>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </AppLayout>
   );
 };
 
