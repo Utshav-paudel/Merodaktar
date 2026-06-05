@@ -22,7 +22,8 @@
 </div>
 
 <div align="center">
-  <img src="docs/screenshots/01-patient-login.png" alt="MeroDaktar — AI telemedicine sign-in" width="920" />
+  <img src="docs/demo.gif" alt="MeroDaktar demo — Nepali voice/text AI consultation, appointments, EHR and doctor portal" width="920" />
+  <br/><sub><i>Live walkthrough: sign-in · patient dashboard · AI consultation (Nepali) · appointments · health records · doctor portal</i></sub>
 </div>
 
 ---
@@ -42,7 +43,7 @@ It is not a chatbot demo. It is a layered, tested, production-shaped system: **6
 | | | |
 |:--:|:--:|:--:|
 | **🎙️ Voice-first triage** | **🧠 Medical-grade AI** | **🔁 It remembers** |
-| Speak your symptoms — Gemini ASR transcribes, the AI replies, and answers are read back aloud. | Runs on Google **MedGemma** with a one-flag fallback to **OpenAI** — same prompts, swappable engine. | Redis session memory + **semantic vector search** mean no repeated questions across a consultation. |
+| Speak your symptoms in **Nepali or English** — Gemini transcribes, the AI replies in your language, and reads answers aloud. | Pluggable engine via one env var — **Gemini**, **MedGemma**, or **OpenAI** — same prompts, swappable backend. | Redis session memory + **semantic vector search** mean no repeated questions across a consultation. |
 | **🩺 Real doctor handoff** | **📋 Full EHR** | **🛡️ Built to last** |
 | Live availability, time-slot booking, and a complete doctor dashboard with encounter notes. | Vitals, allergies, medications and a chronological encounter timeline per patient. | **49 automated tests · 91% coverage**, JWT auth, Dockerised infra. |
 
