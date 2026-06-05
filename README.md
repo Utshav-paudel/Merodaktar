@@ -230,7 +230,7 @@ cp app/.env.example app/.env     # add your DB url + AI keys (MEDGEMMA / OPENAI 
 uvicorn app.main:app --reload    # http://localhost:8000  ·  docs at /docs
 ```
 
-> Switch AI engines with a single env var: `AI_BACKEND=medgemma` or `AI_BACKEND=openai`.
+> Switch AI engines with a single env var: `AI_BACKEND=gemini` (chat + embeddings + voice on one key), `AI_BACKEND=openai`, or `AI_BACKEND=medgemma`.
 
 ### 3. Frontend
 

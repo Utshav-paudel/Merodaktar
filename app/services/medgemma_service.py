@@ -53,12 +53,15 @@ class MedGemmaService:
         self.DUPLICATE_THRESHOLD = 0.80  # 80% similarity = likely duplicate
     
     def _get_embedding(self, text: str) -> List[float]:
-        """Generate embedding for text using OpenAI"""
+        """Generate embedding for text using the configured AI backend"""
         try:
+            if self.ai_backend == 'gemini':
+                from services.ai_provider import generate_embedding
+                return generate_embedding(text)
             if not self.openai_client:
                 return []
             response = self.openai_client.embeddings.create(
-                model="text-embedding-3-small", 
+                model="text-embedding-3-small",
                 input=text
             )
             return response.data[0].embedding
@@ -233,11 +236,25 @@ class MedGemmaService:
             system_message: Optional system message for OpenAI
             use_medgemma: Override backend choice (True=MedGemma, False=OpenAI, None=use setting)
         """
+        # Gemini backend (chat) — route through the unified AI provider
+        if use_medgemma is None and self.ai_backend == 'gemini':
+            from services.ai_provider import generate_chat
+            messages = []
+            if system_message:
+                messages.append({"role": "system", "content": system_message})
+            messages.append({"role": "user", "content": prompt})
+            try:
+                result = generate_chat(messages, temperature=temperature, max_tokens=max_tokens)
+                if result:
+                    return result
+            except Exception as e:
+                logger.warning(f"Gemini generation failed, falling back: {e}")
+
         # Determine which backend to use
         if use_medgemma is None:
-            # Use setting
-            use_medgemma = self.ai_backend != 'openai'
-        
+            # Use setting ('medgemma' or any non-openai/non-gemini value)
+            use_medgemma = self.ai_backend not in ('openai', 'gemini')
+
         # Try MedGemma if requested
         if use_medgemma:
             logger.info("Using MedGemma backend")

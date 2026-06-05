@@ -30,10 +30,11 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # AI API Keys
-    OPENAI_API_KEY: str
-    GEMINI_API_KEY: str
-    
+    # AI API Keys (all optional — provide the key(s) for your chosen AI_BACKEND)
+    OPENAI_API_KEY: str = ""
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
     # MedGemma Configuration
     MEDGEMMA_BASE_URL: str = "https://e6r5j02wqcigw3lp.us-east-1.aws.endpoints.huggingface.cloud/v1/"
     MEDGEMMA_API_KEY: str = ""
@@ -44,7 +45,7 @@ class Settings(BaseSettings):
     MEDGEMMA_ENDPOINT: str = ""  # MedGemma endpoint URL (deprecated, use MEDGEMMA_BASE_URL)
 
     # AI Backend Selection
-    AI_BACKEND: str = "openai"  # Options: "openai" or "medgemma"
+    AI_BACKEND: str = "openai"  # Options: "gemini", "openai", or "medgemma"
 
     # CORS Settings
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173"

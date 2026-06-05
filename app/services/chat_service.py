@@ -1,16 +1,15 @@
 from typing import Dict, List, Optional
 from sqlalchemy.orm import Session
 import uuid
-from openai import OpenAI
 import json
 
 from repositories.consultation import ConsultationRepository
 from services.redis_service import RedisService
+from services.ai_provider import generate_chat, generate_embedding
 from core.exceptions import NotFoundError
 from config.settings import get_settings
 
 settings = get_settings()
-openai_client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 
 class ChatService:
@@ -63,15 +62,8 @@ class ChatService:
         return self.create_session(patient_id)
 
     def _get_embedding(self, text: str) -> List[float]:
-        """Generate embedding for text using OpenAI"""
-        try:
-            response = openai_client.embeddings.create(
-                model="text-embedding-3-small", input=text
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            print(f"Error generating embedding: {e}")
-            return []
+        """Generate embedding for text using the configured AI backend."""
+        return generate_embedding(text)
 
     def _cosine_similarity(
         self, vec1: List[float], vec2: List[float]
@@ -427,15 +419,8 @@ Be conversational, supportive, and provide context-aware responses."""
             # Add current message
             messages.append({"role": "user", "content": user_message})
 
-            # Call OpenAI
-            response = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                temperature=0.7,
-                max_tokens=500,
-            )
-
-            return response.choices[0].message.content
+            # Generate via the configured AI backend (Gemini / OpenAI)
+            return generate_chat(messages, temperature=0.7, max_tokens=500)
 
         except Exception as e:
             return f"I apologize, but I'm having trouble processing your request right now. Please try again or consult with a healthcare professional. Error: {str(e)}"

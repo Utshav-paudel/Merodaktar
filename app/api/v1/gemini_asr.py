@@ -70,7 +70,7 @@ def _call_gemini_with_retry(uploaded_file, max_retries: int = 3, initial_delay: 
         try:
             logger.info("Requesting transcription from Gemini (attempt %d/%d)...", attempt + 1, max_retries)
             response = client.models.generate_content(
-                model="gemini-2.0-flash-exp",
+                model=settings.GEMINI_MODEL,
                 contents=[
                     "Transcribe the audio. It may contain both English and Nepali. Use Nepali script for Nepali speech.",
                     uploaded_file,
